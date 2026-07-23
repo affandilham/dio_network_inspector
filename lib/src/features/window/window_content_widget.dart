@@ -2,15 +2,18 @@ import 'package:flutter/material.dart';
 import 'window_content_controller.dart';
 import '../request_list/request_list_widget.dart';
 import '../request_detail/detail_pane_widget.dart';
+import '../notes/notes_pane_widget.dart';
 
 class InspectorWindowContentWidget extends StatefulWidget {
   const InspectorWindowContentWidget({super.key});
 
   @override
-  State<InspectorWindowContentWidget> createState() => _InspectorWindowContentWidgetState();
+  State<InspectorWindowContentWidget> createState() =>
+      _InspectorWindowContentWidgetState();
 }
 
-class _InspectorWindowContentWidgetState extends State<InspectorWindowContentWidget> {
+class _InspectorWindowContentWidgetState
+    extends State<InspectorWindowContentWidget> {
   late WindowContentController _controller;
 
   @override
@@ -37,11 +40,14 @@ class _InspectorWindowContentWidgetState extends State<InspectorWindowContentWid
                 builder: (context, state, child) {
                   if (state.leftPaneWidth == null) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
-                      _controller.setInitialLeftPaneWidth(constraints.maxWidth / 3);
+                      _controller.setInitialLeftPaneWidth(
+                        constraints.maxWidth / 3,
+                      );
                     });
                   }
 
-                  if (constraints.maxWidth < 200 || state.selectedRequest == null) {
+                  if (constraints.maxWidth < 200 ||
+                      (state.selectedRequest == null && !state.isNotesOpen)) {
                     return InspectorRequestListWidget(
                       selectedRequest: state.selectedRequest,
                       onSelected: _controller.selectRequest,
@@ -65,23 +71,31 @@ class _InspectorWindowContentWidgetState extends State<InspectorWindowContentWid
                       GestureDetector(
                         behavior: HitTestBehavior.translucent,
                         onPanUpdate: (details) {
-                          _controller.updateLeftPaneWidth(details.delta.dx, constraints.maxWidth);
+                          _controller.updateLeftPaneWidth(
+                            details.delta.dx,
+                            constraints.maxWidth,
+                          );
                         },
                         child: MouseRegion(
                           cursor: SystemMouseCursors.resizeColumn,
                           child: Container(
                             width: 8,
                             color: Colors.transparent,
-                            child: const VerticalDivider(width: 1, thickness: 1),
+                            child: const VerticalDivider(
+                              width: 1,
+                              thickness: 1,
+                            ),
                           ),
                         ),
                       ),
-                      // Right Pane: Request Details
+                      // Right Pane: Request details or the global notes panel.
                       Expanded(
-                        child: InspectorDetailPaneWidget(
-                          request: state.selectedRequest!,
-                          onClose: () => _controller.selectRequest(null),
-                        ),
+                        child: state.isNotesOpen
+                            ? const InspectorNotesPaneWidget()
+                            : InspectorDetailPaneWidget(
+                                request: state.selectedRequest!,
+                                onClose: () => _controller.selectRequest(null),
+                              ),
                       ),
                     ],
                   );
