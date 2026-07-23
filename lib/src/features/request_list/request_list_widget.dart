@@ -3,11 +3,14 @@ import '../../dio_network_inspector.dart';
 import '../../models/network_request.dart';
 import '../../core/theme/inspector_colors.dart';
 import '../../core/theme/inspector_dimensions.dart';
+import '../../core/theme/inspector_typography.dart';
 import '../../components/base_text.dart';
 import '../../components/custom_popup_menu_item.dart';
 import 'request_list_controller.dart';
 
-class InspectorRequestListWidget extends StatelessWidget {
+enum _RequestFilter { all, success, errors, slow, get, post }
+
+class InspectorRequestListWidget extends StatefulWidget {
   final NetworkRequest? selectedRequest;
   final ValueChanged<NetworkRequest> onSelected;
 
@@ -18,31 +21,221 @@ class InspectorRequestListWidget extends StatelessWidget {
   });
 
   @override
+  State<InspectorRequestListWidget> createState() =>
+      _InspectorRequestListWidgetState();
+}
+
+class _InspectorRequestListWidgetState
+    extends State<InspectorRequestListWidget> {
+  final _searchController = TextEditingController();
+  _RequestFilter _filter = _RequestFilter.all;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<List<NetworkRequest>>(
-      valueListenable: DioNetworkInspector.instance.requests,
-      builder: (context, requests, _) {
-        if (requests.isEmpty) {
-          return const Center(
-            child: BaseText(
-              'No requests',
-              color: InspectorColors.textSecondary,
+    return Column(
+      children: [
+        _buildToolbar(),
+        Expanded(
+          child: ValueListenableBuilder<List<NetworkRequest>>(
+            valueListenable: DioNetworkInspector.instance.requests,
+            builder: (context, requests, _) {
+              final query = _searchController.text.trim().toLowerCase();
+              final filtered = requests.where((request) {
+                final matchesSearch =
+                    query.isEmpty ||
+                    request.url.toLowerCase().contains(query) ||
+                    request.method.toLowerCase().contains(query) ||
+                    (request.statusCode?.toString().contains(query) ?? false);
+                final isError =
+                    request.error != null || (request.statusCode ?? 0) >= 400;
+                final matchesFilter = switch (_filter) {
+                  _RequestFilter.all => true,
+                  _RequestFilter.success =>
+                    !isError &&
+                        (request.statusCode ?? 0) >= 200 &&
+                        (request.statusCode ?? 0) < 300,
+                  _RequestFilter.errors => isError,
+                  _RequestFilter.slow => request.duration >= 1000,
+                  _RequestFilter.get => request.method.toUpperCase() == 'GET',
+                  _RequestFilter.post => request.method.toUpperCase() == 'POST',
+                };
+                return matchesSearch && matchesFilter;
+              }).toList();
+
+              if (filtered.isEmpty) {
+                return Center(
+                  child: BaseText(
+                    requests.isEmpty
+                        ? 'No requests yet'
+                        : 'No matching requests',
+                    color: InspectorColors.textSecondary,
+                  ),
+                );
+              }
+
+              return ListView.builder(
+                itemCount: filtered.length,
+                itemBuilder: (context, index) {
+                  final request = filtered[index];
+                  return _RequestTile(
+                    req: request,
+                    isSelected: widget.selectedRequest?.id == request.id,
+                    onSelected: widget.onSelected,
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildToolbar() {
+    return Container(
+      height: 44,
+      padding: const EdgeInsets.symmetric(
+        horizontal: InspectorDimensions.spacingS,
+      ),
+      decoration: const BoxDecoration(
+        color: InspectorColors.surface,
+        border: Border(bottom: BorderSide(color: InspectorColors.divider)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: SizedBox(
+              height: 36,
+              child: TextField(
+                controller: _searchController,
+                onChanged: (_) => setState(() {}),
+                style: InspectorTypography.body,
+                decoration: InputDecoration(
+                  hintText: 'Search requests',
+                  hintStyle: InspectorTypography.body.copyWith(
+                    color: InspectorColors.textSecondary,
+                  ),
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    size: 16,
+                    color: InspectorColors.textSecondary,
+                  ),
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                  filled: true,
+                  fillColor: InspectorColors.background,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(
+                      InspectorDimensions.radiusM,
+                    ),
+                    borderSide: const BorderSide(
+                      color: InspectorColors.divider,
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(
+                      InspectorDimensions.radiusM,
+                    ),
+                    borderSide: const BorderSide(
+                      color: InspectorColors.divider,
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(
+                      InspectorDimensions.radiusM,
+                    ),
+                    borderSide: const BorderSide(
+                      color: InspectorColors.primary,
+                    ),
+                  ),
+                ),
+              ),
             ),
-          );
-        }
-        return ListView.builder(
-          itemCount: requests.length,
-          itemBuilder: (context, index) {
-            final req = requests[index];
-            final isSelected = selectedRequest?.id == req.id;
-            return _RequestTile(
-              req: req,
-              isSelected: isSelected,
-              onSelected: onSelected,
-            );
-          },
-        );
-      },
+          ),
+          const SizedBox(width: InspectorDimensions.spacingXs),
+          Theme(
+            data: Theme.of(context).copyWith(
+              splashColor: Colors.transparent,
+              highlightColor: Colors.transparent,
+            ),
+            child: PopupMenuButton<_RequestFilter>(
+              tooltip: 'Filter requests',
+              position: PopupMenuPosition.under,
+              offset: const Offset(0, 4),
+              constraints: const BoxConstraints(minWidth: 176),
+              color: InspectorColors.background,
+              elevation: 6,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(
+                  InspectorDimensions.radiusXl,
+                ),
+              ),
+              onSelected: (filter) => setState(() => _filter = filter),
+              itemBuilder: (context) => [
+                CustomPopupMenuItem(
+                  value: _RequestFilter.all,
+                  text: 'All requests',
+                  isSelected: _filter == _RequestFilter.all,
+                ),
+                CustomPopupMenuItem(
+                  value: _RequestFilter.errors,
+                  text: 'Errors only',
+                  isSelected: _filter == _RequestFilter.errors,
+                ),
+                CustomPopupMenuItem(
+                  value: _RequestFilter.success,
+                  text: 'Successful (2xx)',
+                  isSelected: _filter == _RequestFilter.success,
+                ),
+                CustomPopupMenuItem(
+                  value: _RequestFilter.slow,
+                  text: 'Slow (≥ 1 second)',
+                  isSelected: _filter == _RequestFilter.slow,
+                ),
+                CustomPopupMenuItem(
+                  value: _RequestFilter.get,
+                  text: 'GET only',
+                  isSelected: _filter == _RequestFilter.get,
+                ),
+                CustomPopupMenuItem(
+                  value: _RequestFilter.post,
+                  text: 'POST only',
+                  isSelected: _filter == _RequestFilter.post,
+                ),
+              ],
+              child: SizedBox(
+                width: 36,
+                height: 36,
+                child: Container(
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: _filter == _RequestFilter.all
+                        ? InspectorColors.background
+                        : InspectorColors.primaryContainer,
+                    border: Border.all(color: InspectorColors.divider),
+                    borderRadius: BorderRadius.circular(
+                      InspectorDimensions.radiusM,
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.filter_list,
+                    size: 18,
+                    color: _filter == _RequestFilter.all
+                        ? InspectorColors.textBlueGrey
+                        : InspectorColors.primary,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -61,138 +254,132 @@ class _RequestTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final primaryContainer = theme.colorScheme.primaryContainer;
-    final hasError = req.error != null;
-    final isSuccess = req.statusCode != null &&
+    final hasError = req.error != null || (req.statusCode ?? 0) >= 400;
+    final isSuccess =
+        !hasError &&
+        req.statusCode != null &&
         req.statusCode! >= 200 &&
         req.statusCode! < 300;
-
-    Color statusColor = InspectorColors.textSecondary;
-    if (hasError || (req.statusCode != null && req.statusCode! >= 400)) {
-      statusColor = InspectorColors.error;
-    } else if (isSuccess) {
-      statusColor = InspectorColors.success;
-    }
-
+    final statusColor = hasError
+        ? InspectorColors.error
+        : isSuccess
+        ? InspectorColors.success
+        : InspectorColors.textSecondary;
     final path = Uri.tryParse(req.url)?.path ?? req.url;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final durationStr = '${req.duration} ms';
-        final durationPainter = TextPainter(
-          text: TextSpan(
-            text: durationStr,
-            style: const TextStyle(fontSize: 10, color: Colors.grey),
-          ),
-          maxLines: 1,
-          textDirection: TextDirection.ltr,
-        )..layout(maxWidth: double.infinity);
-
-        final pathStyle = TextStyle(
-          fontSize: 12,
-          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-        );
-        final pathPainter = TextPainter(
-          text: TextSpan(text: path, style: pathStyle),
-          maxLines: 1,
-          textDirection: TextDirection.ltr,
-        )..layout(maxWidth: double.infinity);
-
-        final availablePathWidth =
-            constraints.maxWidth - 93.0 - durationPainter.size.width;
-        final isOverflowing = pathPainter.size.width > availablePathWidth;
-
-        Widget content = GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onSecondaryTapDown: (details) {
-            final overlay = Navigator.of(context).overlay?.context.findRenderObject() as RenderBox?;
-            if (overlay == null) return;
-
-            final localPosition = overlay.globalToLocal(details.globalPosition);
-
-            showMenu(
-              context: context,
-              position: RelativeRect.fromSize(
-                localPosition & Size.zero,
-                overlay.size,
-              ),
-              constraints: const BoxConstraints(),
-              color: InspectorColors.background,
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(InspectorDimensions.radiusXl),
-              ),
-              items: [
-                const CustomPopupMenuItem(
-                  value: 'copy_curl',
-                  text: 'Copy as cURL',
+    return Tooltip(
+      message: req.url,
+      waitDuration: const Duration(milliseconds: 450),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onSecondaryTapDown: (details) => _showContextMenu(context, details),
+        child: InkWell(
+          onTap: () => onSelected(req),
+          child: Container(
+            height: 40,
+            padding: const EdgeInsets.only(
+              left: InspectorDimensions.spacingS,
+              right: InspectorDimensions.spacingM,
+            ),
+            decoration: BoxDecoration(
+              color: isSelected ? InspectorColors.primaryContainer : null,
+              border: Border(
+                left: BorderSide(
+                  color: isSelected
+                      ? InspectorColors.primary
+                      : Colors.transparent,
+                  width: 3,
                 ),
-              ],
-            ).then((value) {
-              if (!context.mounted) return;
-              if (value == 'copy_curl') {
-                _controller.handleCopyCurl(context, req);
-              }
-            });
-          },
-          child: InkWell(
-            onTap: () => onSelected(req),
-            child: Container(
-              color: isSelected ? primaryContainer : null,
-              padding: const EdgeInsets.symmetric(
-                horizontal: InspectorDimensions.spacingS,
-                vertical: InspectorDimensions.spacingM / 2,
-              ),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 30,
-                    child: BaseText(
-                      req.statusCode?.toString() ?? '...',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
-                      color: statusColor,
-                    ),
-                  ),
-                  const SizedBox(width: InspectorDimensions.spacingXs),
-                  SizedBox(
-                    width: 35,
-                    child: BaseText(
-                      req.method,
-                      style: const TextStyle(fontSize: 10),
-                      color: InspectorColors.textBlueGrey,
-                    ),
-                  ),
-                  const SizedBox(width: InspectorDimensions.spacingXs),
-                  Expanded(
-                    child: BaseText(
-                      path,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: pathStyle,
-                    ),
-                  ),
-                  const SizedBox(width: InspectorDimensions.spacingXs),
-                  BaseText(
-                    durationStr,
-                    style: const TextStyle(fontSize: 10),
-                    color: InspectorColors.textSecondary,
-                  ),
-                ],
+                bottom: const BorderSide(color: InspectorColors.surface),
               ),
             ),
+            child: Row(
+              children: [
+                Container(
+                  constraints: const BoxConstraints(minWidth: 31),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: BaseText(
+                    req.statusCode?.toString() ?? '…',
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    color: statusColor,
+                  ),
+                ),
+                const SizedBox(width: InspectorDimensions.spacingS),
+                SizedBox(
+                  width: 36,
+                  child: BaseText(
+                    req.method,
+                    style: InspectorTypography.mono.copyWith(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    color: InspectorColors.textBlueGrey,
+                  ),
+                ),
+                const SizedBox(width: InspectorDimensions.spacingS),
+                Expanded(
+                  child: BaseText(
+                    path,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    isMono: true,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w500,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: InspectorDimensions.spacingS),
+                BaseText(
+                  '${req.duration}ms',
+                  isMono: true,
+                  style: const TextStyle(fontSize: 10),
+                  color: InspectorColors.textSecondary,
+                ),
+              ],
+            ),
           ),
-        );
-
-        if (isOverflowing) {
-          return Tooltip(
-            message: path,
-            waitDuration: const Duration(milliseconds: 500),
-            child: content,
-          );
-        }
-        return content;
-      },
+        ),
+      ),
     );
+  }
+
+  void _showContextMenu(BuildContext context, TapDownDetails details) {
+    final overlay =
+        Navigator.of(context).overlay?.context.findRenderObject() as RenderBox?;
+    if (overlay == null) return;
+    final position = RelativeRect.fromSize(
+      overlay.globalToLocal(details.globalPosition) & Size.zero,
+      overlay.size,
+    );
+    showMenu(
+      context: context,
+      position: position,
+      color: InspectorColors.background,
+      elevation: 6,
+      constraints: const BoxConstraints(minWidth: 176),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(InspectorDimensions.radiusXl),
+      ),
+      items: const [
+        CustomPopupMenuItem(value: 'copy_curl', text: 'Copy as cURL'),
+      ],
+    ).then((value) {
+      if (context.mounted && value == 'copy_curl') {
+        _controller.handleCopyCurl(context, req);
+      }
+    });
   }
 }

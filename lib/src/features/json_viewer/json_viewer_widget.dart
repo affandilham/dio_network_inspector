@@ -66,7 +66,9 @@ class _JsonViewerWidgetState extends State<JsonViewerWidget> {
               initiallyExpanded: widget.initiallyExpanded,
               searchQuery: state.searchQuery,
               matches: state.matches,
-              activeMatchPath: state.matches.isNotEmpty ? state.matches[state.currentMatchIndex] : null,
+              activeMatchPath: state.matches.isNotEmpty
+                  ? state.matches[state.currentMatchIndex]
+                  : null,
               activeMatchKey: _controller.activeMatchKey,
               zoomLevel: state.zoomLevel,
             ),

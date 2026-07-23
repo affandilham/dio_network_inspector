@@ -35,7 +35,7 @@ class JsonViewerToolbarWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: InspectorDimensions.spacingS,
+        horizontal: InspectorDimensions.spacingM,
         vertical: InspectorDimensions.spacingXs,
       ),
       decoration: BoxDecoration(
@@ -53,30 +53,55 @@ class JsonViewerToolbarWidget extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: TextField(
-              controller: searchController,
-              onChanged: onSearchChanged,
-              decoration: InputDecoration(
-                isDense: true,
-                hintText: 'Search...',
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: InspectorDimensions.spacingS,
-                  vertical: InspectorDimensions.spacingS,
+            child: SizedBox(
+              height: 36,
+              child: TextField(
+                controller: searchController,
+                onChanged: onSearchChanged,
+                decoration: InputDecoration(
+                  isDense: true,
+                  hintText: 'Find in JSON...',
+                  hintStyle: InspectorTypography.body.copyWith(
+                    color: InspectorColors.textSecondary,
+                  ),
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    size: 16,
+                    color: InspectorColors.textSecondary,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: InspectorDimensions.spacingS,
+                    vertical: InspectorDimensions.spacingS,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(
+                      InspectorDimensions.radiusM,
+                    ),
+                    borderSide: const BorderSide(
+                      color: InspectorColors.divider,
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(
+                      InspectorDimensions.radiusM,
+                    ),
+                    borderSide: const BorderSide(
+                      color: InspectorColors.divider,
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(
+                      InspectorDimensions.radiusM,
+                    ),
+                    borderSide: const BorderSide(
+                      color: InspectorColors.primary,
+                    ),
+                  ),
+                  filled: true,
+                  fillColor: InspectorColors.background,
                 ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(InspectorDimensions.radiusS),
-                  borderSide: BorderSide(color: Colors.grey[400]!),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(InspectorDimensions.radiusS),
-                  borderSide: BorderSide(color: Colors.grey[400]!),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(InspectorDimensions.radiusS),
-                  borderSide: BorderSide(color: Theme.of(context).primaryColor),
-                ),
+                style: InspectorTypography.body,
               ),
-              style: InspectorTypography.body,
             ),
           ),
           const SizedBox(width: InspectorDimensions.spacingS),
@@ -96,15 +121,9 @@ class JsonViewerToolbarWidget extends StatelessWidget {
           const SizedBox(width: InspectorDimensions.spacingS),
           Container(width: 1, height: 16, color: InspectorColors.divider),
           const SizedBox(width: InspectorDimensions.spacingS),
-          BaseIconButton(
-            icon: Icons.remove,
-            onPressed: onZoomOut,
-          ),
+          BaseIconButton(icon: Icons.remove, onPressed: onZoomOut),
           BaseText('${(zoomLevel * 100).toInt()}%'),
-          BaseIconButton(
-            icon: Icons.add,
-            onPressed: onZoomIn,
-          ),
+          BaseIconButton(icon: Icons.add, onPressed: onZoomIn),
         ],
       ),
     );

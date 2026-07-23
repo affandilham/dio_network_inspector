@@ -1,7 +1,11 @@
+import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../models/network_request.dart';
 import 'detail_pane_controller.dart';
 import '../json_viewer/json_viewer_widget.dart';
+import '../request_list/request_list_controller.dart';
 import '../../components/custom_popup_menu_item.dart';
 import '../../components/base_text.dart';
 import '../../components/base_container.dart';
@@ -22,7 +26,8 @@ class InspectorDetailPaneWidget extends StatefulWidget {
   });
 
   @override
-  State<InspectorDetailPaneWidget> createState() => _InspectorDetailPaneWidgetState();
+  State<InspectorDetailPaneWidget> createState() =>
+      _InspectorDetailPaneWidgetState();
 }
 
 class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
@@ -45,6 +50,7 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        _buildRequestSummary(),
         // Tabs Header
         BaseContainer(
           color: InspectorColors.surface,
@@ -53,8 +59,14 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
               return ValueListenableBuilder<DetailPaneStateData>(
                 valueListenable: _controller,
                 builder: (context, state, child) {
-                  final tabs = ['Headers', 'Payload', 'Preview', 'Response'];
-                  final tabWidths = [85.0, 80.0, 80.0, 90.0];
+                  final tabs = [
+                    'Headers',
+                    'Payload',
+                    'Preview',
+                    'Response',
+                    'Timing',
+                  ];
+                  final tabWidths = [85.0, 80.0, 80.0, 90.0, 70.0];
                   final moreButtonWidth = 32.0;
 
                   List<int> visibleTabs = [];
@@ -70,11 +82,13 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
                         remainingTabsWidth += tabWidths[j];
                       }
 
-                      if (currentWidth + remainingTabsWidth <= constraints.maxWidth) {
+                      if (currentWidth + remainingTabsWidth <=
+                          constraints.maxWidth) {
                         visibleTabs.add(i);
                         currentWidth += tabWidths[i];
                       } else {
-                        if (currentWidth + tabWidths[i] + moreButtonWidth <= constraints.maxWidth) {
+                        if (currentWidth + tabWidths[i] + moreButtonWidth <=
+                            constraints.maxWidth) {
                           visibleTabs.add(i);
                           currentWidth += tabWidths[i];
                         } else {
@@ -87,7 +101,8 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
                     }
                   }
 
-                  if (hiddenTabs.contains(state.selectedTabIndex) && visibleTabs.isNotEmpty) {
+                  if (hiddenTabs.contains(state.selectedTabIndex) &&
+                      visibleTabs.isNotEmpty) {
                     final lastVisible = visibleTabs.removeLast();
                     visibleTabs.add(state.selectedTabIndex);
                     hiddenTabs.remove(state.selectedTabIndex);
@@ -111,8 +126,15 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
                           ),
                         ),
                       ),
-                      ...visibleTabs.map((i) => _buildTab(tabs[i], i, state.selectedTabIndex)),
-                      if (hiddenTabs.isNotEmpty) _buildMoreTabsButton(hiddenTabs, tabs, state.selectedTabIndex),
+                      ...visibleTabs.map(
+                        (i) => _buildTab(tabs[i], i, state.selectedTabIndex),
+                      ),
+                      if (hiddenTabs.isNotEmpty)
+                        _buildMoreTabsButton(
+                          hiddenTabs,
+                          tabs,
+                          state.selectedTabIndex,
+                        ),
                     ],
                   );
                 },
@@ -135,6 +157,207 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
     );
   }
 
+  Widget _buildRequestSummary() {
+    final request = widget.request;
+    final isError = request.error != null || (request.statusCode ?? 0) >= 400;
+    final statusColor = isError
+        ? InspectorColors.error
+        : InspectorColors.success;
+    final path = Uri.tryParse(request.url)?.path ?? request.url;
+
+    return Container(
+      height: 42,
+      padding: const EdgeInsets.symmetric(
+        horizontal: InspectorDimensions.spacingM,
+      ),
+      decoration: const BoxDecoration(
+        color: InspectorColors.surface,
+        border: Border(bottom: BorderSide(color: InspectorColors.divider)),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final useOverflowMenu = constraints.maxWidth < 560;
+          return Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: InspectorColors.primaryContainer,
+                  borderRadius: BorderRadius.circular(
+                    InspectorDimensions.radiusS,
+                  ),
+                ),
+                child: BaseText(
+                  request.method,
+                  isMono: true,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  color: InspectorColors.primary,
+                ),
+              ),
+              const SizedBox(width: InspectorDimensions.spacingS),
+              Expanded(
+                child: BaseText(
+                  path,
+                  isMono: true,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(width: InspectorDimensions.spacingS),
+              BaseText(
+                request.statusCode?.toString() ?? '…',
+                isMono: true,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+                color: statusColor,
+              ),
+              const SizedBox(width: InspectorDimensions.spacingS),
+              BaseText(
+                '${request.duration}ms',
+                isMono: true,
+                style: const TextStyle(fontSize: 10),
+                color: InspectorColors.textSecondary,
+              ),
+              const SizedBox(width: InspectorDimensions.spacingS),
+              if (useOverflowMenu)
+                _buildActionMenu(request)
+              else ...[
+                if (request.responseData != null)
+                  OutlinedButton(
+                    onPressed: _copyResponse,
+                    style: _summaryButtonStyle,
+                    child: const Text('JSON'),
+                  ),
+                if (request.responseData != null)
+                  const SizedBox(width: InspectorDimensions.spacingXs),
+                OutlinedButton(
+                  onPressed: () =>
+                      RequestListController().handleCopyCurl(context, request),
+                  style: _summaryButtonStyle,
+                  child: const Text('cURL'),
+                ),
+                const SizedBox(width: InspectorDimensions.spacingXs),
+                OutlinedButton(
+                  onPressed: _replayRequest,
+                  style: _summaryButtonStyle,
+                  child: const Text('Replay'),
+                ),
+              ],
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildActionMenu(NetworkRequest request) => PopupMenuButton<String>(
+    tooltip: 'More actions',
+    position: PopupMenuPosition.under,
+    offset: const Offset(0, 4),
+    constraints: const BoxConstraints(minWidth: 176),
+    color: InspectorColors.background,
+    elevation: 6,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(InspectorDimensions.radiusXl),
+    ),
+    onSelected: (value) {
+      if (value == 'json') {
+        _copyResponse();
+      }
+      if (value == 'curl') {
+        RequestListController().handleCopyCurl(context, request);
+      }
+      if (value == 'replay') {
+        _replayRequest();
+      }
+    },
+    itemBuilder: (context) => [
+      if (request.responseData != null)
+        const CustomPopupMenuItem(value: 'json', text: 'Copy JSON'),
+      const CustomPopupMenuItem(value: 'curl', text: 'Copy as cURL'),
+      const CustomPopupMenuItem(value: 'replay', text: 'Replay request'),
+    ],
+    child: const Padding(
+      padding: EdgeInsets.all(6),
+      child: Icon(
+        Icons.more_vert,
+        size: 20,
+        color: InspectorColors.textBlueGrey,
+      ),
+    ),
+  );
+
+  void _copyResponse() {
+    final data = widget.request.responseDataForDisplay;
+    final text = data is String
+        ? data
+        : const JsonEncoder.withIndent('  ').convert(data);
+    Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.maybeOf(
+      context,
+    )?.showSnackBar(const SnackBar(content: Text('JSON copied to clipboard')));
+  }
+
+  static final _summaryButtonStyle = OutlinedButton.styleFrom(
+    minimumSize: const Size(0, 30),
+    padding: const EdgeInsets.symmetric(
+      horizontal: InspectorDimensions.spacingM,
+    ),
+    foregroundColor: InspectorColors.textBlueGrey,
+    textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+    side: const BorderSide(color: InspectorColors.divider),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(InspectorDimensions.radiusM),
+    ),
+  );
+
+  Future<void> _replayRequest() async {
+    final request = widget.request;
+    if (request.requestData is FormData &&
+        (request.requestData as FormData).files.isNotEmpty) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Replay for multipart files requires selecting the local file again.',
+          ),
+        ),
+      );
+      return;
+    }
+    try {
+      await Dio().requestUri<dynamic>(
+        Uri.parse(request.url),
+        data: request.requestData,
+        options: Options(
+          method: request.method,
+          headers: request.requestHeaders,
+        ),
+      );
+      if (mounted) {
+        ScaffoldMessenger.maybeOf(
+          context,
+        )?.showSnackBar(const SnackBar(content: Text('Request replayed')));
+      }
+    } on DioException catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          SnackBar(
+            content: Text('Replay failed: ${error.message ?? error.type.name}'),
+          ),
+        );
+      }
+    }
+  }
+
   Widget _buildTab(String title, int index, int selectedIndex) {
     final isSelected = selectedIndex == index;
     final primaryColor = Theme.of(context).colorScheme.primary;
@@ -143,7 +366,7 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
       onTap: () => _controller.selectTab(index),
       child: Container(
         padding: const EdgeInsets.symmetric(
-          horizontal: InspectorDimensions.spacingL,
+          horizontal: InspectorDimensions.spacingM,
           vertical: InspectorDimensions.spacingS,
         ),
         decoration: BoxDecoration(
@@ -156,14 +379,22 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
         ),
         child: BaseText(
           title,
-          style: isSelected ? InspectorTypography.body.copyWith(fontWeight: FontWeight.bold) : InspectorTypography.body,
-          color: isSelected ? InspectorColors.textPrimary : InspectorColors.textSecondary,
+          style: isSelected
+              ? InspectorTypography.body.copyWith(fontWeight: FontWeight.bold)
+              : InspectorTypography.body,
+          color: isSelected
+              ? InspectorColors.textPrimary
+              : InspectorColors.textSecondary,
         ),
       ),
     );
   }
 
-  Widget _buildMoreTabsButton(List<int> hiddenTabs, List<String> tabs, int selectedIndex) {
+  Widget _buildMoreTabsButton(
+    List<int> hiddenTabs,
+    List<String> tabs,
+    int selectedIndex,
+  ) {
     final isSelectedHidden = hiddenTabs.contains(selectedIndex);
     final primaryColor = Theme.of(context).colorScheme.primary;
 
@@ -175,10 +406,10 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
       child: PopupMenuButton<int>(
         tooltip: 'More tabs',
         position: PopupMenuPosition.under,
-        offset: const Offset(0, 0),
-        constraints: const BoxConstraints(),
+        offset: const Offset(0, 4),
+        constraints: const BoxConstraints(minWidth: 176),
         color: InspectorColors.background,
-        elevation: 4,
+        elevation: 6,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(InspectorDimensions.radiusXl),
         ),
@@ -209,7 +440,9 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
           child: Icon(
             Icons.keyboard_double_arrow_right,
             size: InspectorDimensions.iconM,
-            color: isSelectedHidden ? InspectorColors.textPrimary : InspectorColors.textSecondary,
+            color: isSelectedHidden
+                ? InspectorColors.textPrimary
+                : InspectorColors.textSecondary,
           ),
         ),
       ),
@@ -239,7 +472,7 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
               const SizedBox(height: InspectorDimensions.spacingL),
               const SectionTitle('Response Headers'),
               JsonViewerWidget(
-                data: req.responseHeaders ?? <String, dynamic>{},
+                data: req.responseHeadersForDisplay,
                 key: const ValueKey('headers_response'),
                 showToolbar: false,
                 isScrollable: false,
@@ -247,7 +480,7 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
               const SizedBox(height: InspectorDimensions.spacingL),
               const SectionTitle('Request Headers'),
               JsonViewerWidget(
-                data: req.requestHeaders ?? <String, dynamic>{},
+                data: req.requestHeadersForDisplay,
                 key: const ValueKey('headers_request'),
                 showToolbar: false,
                 isScrollable: false,
@@ -256,7 +489,8 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
           ),
         );
       case 1: // Payload
-        final hasQuery = req.queryParameters != null && req.queryParameters!.isNotEmpty;
+        final hasQuery =
+            req.queryParameters != null && req.queryParameters!.isNotEmpty;
         final hasBody = req.requestData != null;
 
         if (!hasQuery && !hasBody) {
@@ -276,7 +510,7 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
               ),
               Expanded(
                 child: JsonViewerWidget(
-                  data: req.queryParameters!,
+                  data: req.queryParametersForDisplay,
                   key: const ValueKey('payload_query'),
                   initiallyExpanded: true,
                 ),
@@ -289,7 +523,7 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
               ),
               Expanded(
                 child: JsonViewerWidget(
-                  data: req.requestData,
+                  data: req.requestDataForDisplay,
                   key: const ValueKey('payload_body'),
                   initiallyExpanded: true,
                 ),
@@ -305,7 +539,7 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
           );
         }
         return JsonViewerWidget(
-          data: req.responseData,
+          data: req.responseDataForDisplay,
           key: const ValueKey('preview'),
           initiallyExpanded: false,
         );
@@ -317,9 +551,30 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
           );
         }
         return JsonViewerWidget(
-          data: req.responseData,
+          data: req.responseDataForDisplay,
           key: const ValueKey('response'),
           initiallyExpanded: true,
+        );
+      case 4:
+        return Padding(
+          padding: const EdgeInsets.all(InspectorDimensions.spacingM),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SectionTitle('Request timing'),
+              DetailRow(label: 'Duration', value: '${req.duration} ms'),
+              DetailRow(label: 'Response size', value: '${req.size} bytes'),
+              DetailRow(
+                label: 'Started',
+                value: req.requestTime.toLocal().toIso8601String(),
+              ),
+              if (req.responseTime != null)
+                DetailRow(
+                  label: 'Completed',
+                  value: req.responseTime!.toLocal().toIso8601String(),
+                ),
+            ],
+          ),
         );
       default:
         return const SizedBox();
