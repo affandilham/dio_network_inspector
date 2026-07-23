@@ -1,74 +1,147 @@
 # Dio Network Inspector
 
-Plugin lokal *pluggable* untuk memantau lalu lintas API pada aplikasi Flutter Anda. Plugin ini dirancang untuk dapat "dicolok-cabut" (*plug and play*) tanpa perlu menyampah di riwayat commit Git utama Anda, dan dapat digunakan di berbagai macam proyek.
+Plugin Flutter yang dapat dipasang sementara untuk memantau trafik API `Dio`. Integrasi inspector disimpan sebagai Git patch lokal sehingga tidak ikut ke commit aplikasi.
 
-## Fitur CLI (Command Line Interface)
+## Cara kerja
 
-Plugin ini dilengkapi dengan *executable* CLI bawaan berbasis Dart untuk mengatur pemasangan dan pencabutan plugin dengan mudah menggunakan fitur Git Patch.
+`inspector.patch` merekam tiga perubahan integrasi: dependency package, pemasangan `DioNetworkInterceptor`, dan `DioInspectorOverlay`. Perintah lokal `inspect-save`, `inspect-plug`, dan `inspect-unplug` menjalankan Git langsung; package ini tidak menyediakan CLI Dart.
 
-## Cara Penggunaan (Implementasi Pertama Kali)
+## Implementasi pertama kali
 
-Jika Anda ingin menggunakan plugin ini di dalam proyek Flutter yang baru (misalnya bukan Voltunes):
+Lakukan langkah berikut dari root proyek Flutter target.
 
-1. **Tambahkan Dependensi**
-   Tambahkan plugin ini ke `pubspec.yaml` proyek Anda. Jika Anda mengambil dari GitHub:
+1. Tambahkan package sementara ke `pubspec.yaml`:
+
    ```yaml
-   dev_dependencies:
+   dependencies:
      dio_network_inspector:
-       git: https://github.com/affandilham/dio_network_inspector.git
+       git:
+         url: https://github.com/affandilham/dio_network_inspector.git
+         ref: v1.0.0
    ```
 
-2. **Pasang Plugin Secara Manual (Satu Kali Saja)**
-   Ubah kode di proyek Anda secara manual.
-   * Hubungkan `DioNetworkInterceptor` pada instance `Dio` Anda.
-   * Bungkus widget `MaterialApp` Anda dengan `DioInspectorOverlay(navigatorKey: ..., child: ...)`
+2. Jalankan `flutter pub get`, lalu pasang integrasi secara manual:
 
-3. **Rekam Patch (SAVE)**
-   Sebelum Anda melakukan `git add` atau `git commit`, rekam perubahan kode manual tersebut dengan menjalankan perintah CLI berikut di terminal proyek Anda:
+   - Tambahkan `DioNetworkInterceptor()` ke instance `Dio`.
+   - Bungkus aplikasi dengan `DioInspectorOverlay`.
+
+3. Konfigurasikan perintah lokal sesuai sistem operasi di bagian berikut.
+
+4. Rekam patch. Sebaiknya sebutkan file integrasi agar perubahan pekerjaan lain tidak ikut:
+
    ```bash
-   dart run dio_network_inspector save
+   inspect-save pubspec.yaml lib/src/app/app.dart lib/src/app/resource/base_api.dart
    ```
-   *(Efek: Sebuah file `inspector.patch` akan dibuat di root proyek Anda. File ini berisi rekaman lokasi di mana Anda menyisipkan kode plugin tadi).*
-   
-   **Tips**: Jika kebetulan Anda memiliki file lain yang sedang Anda ubah (uncommitted changes) yang tidak ingin ikut terekam ke dalam patch, Anda bisa menyebutkan nama-nama file plugin secara spesifik:
+
+5. Tambahkan `inspector.patch` ke `.gitignore` proyek target:
+
+   ```gitignore
+   # Local Dio Network Inspector integration
+   inspector.patch
+   ```
+
+6. Cabut integrasi sebelum melakukan commit:
+
    ```bash
-   dart run dio_network_inspector save pubspec.yaml lib/src/app/app.dart lib/src/app/resource/base_api.dart
+   inspect-unplug
    ```
 
-4. **Kembalikan Kode Seperti Semula (UNPLUG)**
-   Karena patch-nya sudah tersimpan, cabut sisipan manual tadi agar *repository* Anda bersih kembali:
-   ```bash
-   dart run dio_network_inspector unplug
-   ```
+> Penting: jangan melakukan `git add`, `git commit`, atau `git push` saat inspector masih terpasang. Setelah `inspect-unplug`, pastikan `git status` tidak memuat `pubspec.yaml`, file aplikasi, atau file API yang hanya berubah karena inspector.
 
-## Cara Penggunaan Sehari-Hari
+## Konfigurasi perintah lokal
 
-Setelah langkah instalasi di atas dilakukan dan `inspector.patch` sudah tercipta, teman-teman tim Anda (atau Anda sendiri) bisa menggunakan workflow ini dengan instan:
+Tambahkan fungsi berikut satu kali pada konfigurasi shell pengguna. Ketiga perintah harus selalu dijalankan dari root proyek target, tempat `inspector.patch` berada.
 
-### 1. Memasang Plugin (PLUG)
-Gunakan ini saat Anda ingin melakukan *debugging* memantau API secara lokal. Jalankan di root proyek aplikasi Flutter Anda:
+### macOS (`zsh`) dan Linux (`bash`/`zsh`)
+
+Tambahkan blok ini ke `~/.zshrc` (macOS atau Linux dengan zsh) atau `~/.bashrc` (Linux dengan bash), lalu buka terminal baru atau jalankan `source ~/.zshrc` / `source ~/.bashrc`.
+
 ```bash
-dart run dio_network_inspector plug
-```
-*(Efek: Patch akan diaplikasikan. Sebuah tombol melayang Inspector akan muncul di layar aplikasi Anda).*
+inspect-save() {
+  local tmp_patch
 
-### 2. Mencabut Plugin (UNPLUG)
-Gunakan ini saat *debugging* selesai, atau **SANGAT PENTING: Sebelum Anda melakukan `git add`, `git commit`, atau `git push`** di proyek utama. 
+  tmp_patch=$(mktemp inspector.patch.XXXXXX) || return 1
+  git diff -- "$@" > "$tmp_patch"
+
+  if [[ ! -s "$tmp_patch" ]]; then
+    rm "$tmp_patch"
+    echo "Tidak ada perubahan untuk disimpan; inspector.patch lama tetap aman."
+    return 1
+  fi
+
+  mv "$tmp_patch" inspector.patch
+  echo "Patch tersimpan: inspector.patch"
+}
+
+inspect-plug() {
+  git apply inspector.patch && flutter pub get
+}
+
+inspect-unplug() {
+  git apply -R inspector.patch && flutter pub get
+}
+```
+
+### Windows (PowerShell)
+
+Jalankan `$PROFILE` untuk melihat lokasi file profil PowerShell. Buat file tersebut bila belum ada, lalu tambahkan blok berikut. Buka PowerShell baru atau jalankan `. $PROFILE` setelah menyimpannya.
+
+```powershell
+function inspect-save {
+  param([Parameter(ValueFromRemainingArguments = $true)][string[]] $Files)
+
+  $patch = (& git diff -- $Files) -join [Environment]::NewLine
+  if ([string]::IsNullOrWhiteSpace($patch)) {
+    Write-Host 'Tidak ada perubahan untuk disimpan; inspector.patch lama tetap aman.'
+    return
+  }
+
+  $path = Join-Path (Get-Location) 'inspector.patch'
+  [System.IO.File]::WriteAllText(
+    $path,
+    $patch + [Environment]::NewLine,
+    [System.Text.UTF8Encoding]::new($false)
+  )
+  Write-Host 'Patch tersimpan: inspector.patch'
+}
+
+function inspect-plug {
+  git apply inspector.patch
+  if ($LASTEXITCODE -eq 0) { flutter pub get }
+}
+
+function inspect-unplug {
+  git apply -R inspector.patch
+  if ($LASTEXITCODE -eq 0) { flutter pub get }
+}
+```
+
+Jika PowerShell menolak menjalankan profil, jalankan PowerShell dengan hak pengguna biasa dan atur execution policy untuk pengguna saat ini:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+```
+
+## Penggunaan sehari-hari
+
 ```bash
-dart run dio_network_inspector unplug
+# Pasang integrasi untuk debugging lokal.
+inspect-plug
+
+# Cabut integrasi sebelum staging atau commit.
+inspect-unplug
 ```
-*(Efek: Seluruh jejak kode sisipan plugin akan dihapus bersih).*
 
----
+`inspect-save` tanpa argumen merekam seluruh perubahan yang belum di-stage, sama seperti `git diff`. Untuk menghindari perubahan lain ikut tersimpan, berikan path file yang ingin direkam:
 
-## Troubleshooting: Patch Gagal Diterapkan
+```bash
+inspect-save pubspec.yaml lib/src/app/app.dart lib/src/app/resource/base_api.dart
+```
 
-Sewaktu-waktu, saat menjalankan `plug`, Git bisa saja menolak dengan pesan *`patch does not apply`*. 
+## Troubleshooting
 
-### Kenapa Ini Bisa Terjadi?
-Sistem *patch* Git bekerja dengan mencari "Konteks" baris kode (bukan hanya nomor baris). Jika Anda melakukan perubahan/refaktor kode **tepat di sekitar tempat kode plugin tersebut bersandar**, Git akan kebingungan karena lingkungan baris kodenya sudah berubah. 
+Jika `inspect-plug` gagal dengan `patch does not apply`, konteks kode di sekitar titik integrasi telah berubah.
 
-### Cara Memperbaikinya (Regenerate Patch)
-1. **Pasang Manual**: Tambahkan kembali kode sisipan plugin secara manual ke proyek Anda seperti tahap "Implementasi Pertama Kali".
-2. **Perbarui Patch**: Jalankan `dart run dio_network_inspector save`. File `inspector.patch` akan diperbarui sesuai konteks kode terbaru Anda.
-3. **Cabut Kembali**: Jalankan `dart run dio_network_inspector unplug` untuk membersihkan kode. Semua kembali berjalan normal!
+1. Tambahkan ulang integrasi secara manual.
+2. Jalankan `inspect-save` dengan path file integrasi untuk memperbarui `inspector.patch`.
+3. Jalankan `inspect-unplug` untuk membersihkan integrasi kembali.

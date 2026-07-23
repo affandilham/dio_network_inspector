@@ -1,6 +1,6 @@
 name: dio_network_inspector
 description: "A new Flutter package project."
-version: 0.0.1
+version: 0.0.2
 homepage:
 
 environment:
@@ -19,9 +19,6 @@ dev_dependencies:
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
-
-executables:
-  dio_network_inspector: dio_network_inspector
 
 flutter:
 
