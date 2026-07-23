@@ -1,28 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import '../../models/network_request.dart';
 
 class RequestListController {
-  
   String generateCurl(NetworkRequest req) {
-    final buffer = StringBuffer("curl -X ${req.method} '${req.url}'");
+    final buffer = StringBuffer(
+      'curl -X ${req.method} ${_shellQuote(req.url)}',
+    );
     if (req.requestHeaders != null) {
       req.requestHeaders!.forEach((key, value) {
-        buffer.write(" -H '$key: $value'");
+        buffer.write(' -H ${_shellQuote('$key: $value')}');
       });
     }
-    if (req.requestData != null) {
-      if (req.requestData is Map || req.requestData is List) {
-        final dataString = jsonEncode(req.requestData).replaceAll("'", "'\\''");
-        buffer.write(" -d '$dataString'");
-      } else {
-        final dataString = req.requestData.toString().replaceAll("'", "'\\''");
-        buffer.write(" -d '$dataString'");
+    final data = req.requestData;
+    if (data is FormData) {
+      for (final field in data.fields) {
+        buffer.write(' -F ${_shellQuote('${field.key}=${field.value}')}');
       }
+      for (final file in data.files) {
+        final filename = file.value.filename ?? 'file';
+        buffer.write(' -F ${_shellQuote('${file.key}=@$filename')}');
+      }
+    } else if (data != null) {
+      final dataString = data is Map || data is List
+          ? jsonEncode(data)
+          : data.toString();
+      buffer.write(' -d ${_shellQuote(dataString)}');
     }
     return buffer.toString();
   }
+
+  String _shellQuote(String value) => "'${value.replaceAll("'", "'\\''")}'";
 
   void handleCopyCurl(BuildContext context, NetworkRequest req) {
     final curl = generateCurl(req);
