@@ -9,6 +9,7 @@ import '../request_list/request_list_controller.dart';
 import '../../components/custom_popup_menu_item.dart';
 import '../../components/base_text.dart';
 import '../../components/base_container.dart';
+import '../../components/overflow_tooltip.dart';
 import '../../components/section_title.dart';
 import '../../components/detail_row.dart';
 import '../../core/theme/inspector_colors.dart';
@@ -199,14 +200,21 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
               ),
               const SizedBox(width: InspectorDimensions.spacingS),
               Expanded(
-                child: BaseText(
-                  path,
-                  isMono: true,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                child: OverflowTooltip(
+                  message: request.url,
+                  style: InspectorTypography.mono.copyWith(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
+                  ),
+                  child: BaseText(
+                    path,
+                    isMono: true,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
