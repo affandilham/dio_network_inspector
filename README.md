@@ -132,6 +132,18 @@ inspect-plug
 inspect-unplug
 ```
 
+## File Markdown untuk Notes
+
+Pada panel **Notes**, gunakan tombol berikut untuk mengelola satu file Markdown aktif:
+
+- **Open** membuka pemilih file native: Finder di macOS, Explorer di Windows, atau file manager Linux. Pilih file `.md`/`.markdown` yang ingin diedit.
+- **New** membuka dialog simpan native untuk membuat file Markdown baru pada folder pilihan Anda.
+- **Delete** menghapus file Markdown aktif setelah konfirmasi, lalu Notes kembali ke file lokal bawaan.
+
+Lokasi dan file terakhir yang dibuka diingat secara lokal. Jika file tersebut dipindahkan atau dihapus di luar aplikasi, Notes otomatis kembali ke file lokal bawaan saat dibuka lagi.
+
+> Untuk aplikasi macOS yang memakai App Sandbox, tambahkan entitlement `com.apple.security.files.user-selected.read-write` pada konfigurasi entitlements host app agar file yang dipilih dari Finder dapat dibaca dan disimpan kembali.
+
 `inspect-save` tanpa argumen merekam seluruh perubahan yang belum di-stage, sama seperti `git diff`. Untuk menghindari perubahan lain ikut tersimpan, berikan path file yang ingin direkam:
 
 ```bash
