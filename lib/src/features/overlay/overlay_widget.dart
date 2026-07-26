@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'overlay_controller.dart';
 import '../window/resizable_window.dart';
 import '../window/window_content_widget.dart';
+import '../window/window_content_controller.dart';
 import '../../core/theme/inspector_colors.dart';
 import '../../core/theme/inspector_dimensions.dart';
 import '../../core/theme/inspector_typography.dart';
@@ -27,16 +28,33 @@ class DioInspectorOverlay extends StatefulWidget {
 
 class _DioInspectorOverlayState extends State<DioInspectorOverlay> {
   late OverlayController _controller;
+  late WindowContentController _windowContentController;
+
+  void _toggleRecordingFromShortcut() {
+    if (!_controller.value.isOpen) return;
+    final inspector = DioNetworkInspector.instance;
+    inspector.isRecording.value = !inspector.isRecording.value;
+  }
+
+  void _clearLogsFromShortcut() {
+    if (_controller.value.isOpen) DioNetworkInspector.instance.clear();
+  }
+
+  void _toggleWindowFromShortcut() {
+    _controller.toggleOpen(!_controller.value.isOpen);
+  }
 
   @override
   void initState() {
     super.initState();
     _controller = OverlayController();
+    _windowContentController = WindowContentController()..init();
   }
 
   @override
   void dispose() {
     _controller.disposeController();
+    _windowContentController.disposeController();
     super.dispose();
   }
 
@@ -64,39 +82,44 @@ class _DioInspectorOverlayState extends State<DioInspectorOverlay> {
               const SizedBox(width: InspectorDimensions.spacingM),
               ValueListenableBuilder<bool>(
                 valueListenable: DioNetworkInspector.instance.isRecording,
-                builder: (context, isRecording, _) => InkWell(
-                  borderRadius: BorderRadius.circular(
-                    InspectorDimensions.radiusM,
-                  ),
-                  onTap: () => DioNetworkInspector.instance.isRecording.value =
-                      !isRecording,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 4,
+                builder: (context, isRecording, _) => Tooltip(
+                  message:
+                      '${isRecording ? 'Stop' : 'Start'} recording (⌘/Ctrl+R)',
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(
+                      InspectorDimensions.radiusM,
                     ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 7,
-                          height: 7,
-                          decoration: BoxDecoration(
-                            color: isRecording
-                                ? InspectorColors.error
-                                : InspectorColors.textSecondary,
-                            shape: BoxShape.circle,
+                    onTap: () =>
+                        DioNetworkInspector.instance.isRecording.value =
+                            !isRecording,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 4,
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 7,
+                            height: 7,
+                            decoration: BoxDecoration(
+                              color: isRecording
+                                  ? InspectorColors.error
+                                  : InspectorColors.textSecondary,
+                              shape: BoxShape.circle,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 6),
-                        BaseText(
-                          isRecording ? 'Recording' : 'Paused',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
+                          const SizedBox(width: 6),
+                          BaseText(
+                            isRecording ? 'Recording' : 'Paused',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            color: InspectorColors.textSecondary,
                           ),
-                          color: InspectorColors.textSecondary,
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -105,14 +128,18 @@ class _DioInspectorOverlayState extends State<DioInspectorOverlay> {
           ),
           Row(
             children: [
-              BaseIconButton(
-                icon: Icons.delete_outline,
-                color: InspectorColors.textSecondary,
-                size: InspectorDimensions.iconM,
-                tooltip: 'Clear',
-                onPressed: () {
-                  DioNetworkInspector.instance.clear();
-                },
+              ValueListenableBuilder<bool>(
+                valueListenable: DioNetworkInspector.instance.isNotesOpen,
+                builder: (context, isOpen, _) => BaseIconButton(
+                  icon: Icons.sticky_note_2_outlined,
+                  color: isOpen
+                      ? InspectorColors.primary
+                      : InspectorColors.textSecondary,
+                  size: InspectorDimensions.iconM,
+                  tooltip: 'Notes',
+                  onPressed: () =>
+                      DioNetworkInspector.instance.isNotesOpen.value = !isOpen,
+                ),
               ),
               BaseIconButton(
                 icon: Icons.file_upload_outlined,
@@ -128,25 +155,12 @@ class _DioInspectorOverlayState extends State<DioInspectorOverlay> {
                 tooltip: 'Export session to clipboard',
                 onPressed: _exportSession,
               ),
-              ValueListenableBuilder<bool>(
-                valueListenable: DioNetworkInspector.instance.isNotesOpen,
-                builder: (context, isOpen, _) => BaseIconButton(
-                  icon: Icons.sticky_note_2_outlined,
-                  color: isOpen
-                      ? InspectorColors.primary
-                      : InspectorColors.textSecondary,
-                  size: InspectorDimensions.iconM,
-                  tooltip: 'Global notes',
-                  onPressed: () =>
-                      DioNetworkInspector.instance.isNotesOpen.value = !isOpen,
-                ),
-              ),
               const SizedBox(width: InspectorDimensions.spacingS),
               BaseIconButton(
                 icon: Icons.close,
                 color: InspectorColors.textBlueGrey,
                 size: InspectorDimensions.iconL,
-                tooltip: 'Close',
+                tooltip: 'Close inspector (Fn+F12)',
                 onPressed: () => _controller.toggleOpen(false),
               ),
             ],
@@ -188,81 +202,111 @@ class _DioInspectorOverlayState extends State<DioInspectorOverlay> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return ValueListenableBuilder<OverlayStateData>(
-          valueListenable: _controller,
-          builder: (context, state, child) {
-            if (state.fabPosition == null) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                _controller.setInitialFabPosition(
-                  Offset(
-                    constraints.maxWidth - 70.0,
-                    constraints.maxHeight - 70.0,
-                  ),
-                );
-              });
-            }
+    return Overlay(
+      initialEntries: [
+        OverlayEntry(builder: (context) => _buildOverlay(context)),
+      ],
+    );
+  }
 
-            if (state.windowRect == null) {
-              final width = (constraints.maxWidth - 32)
-                  .clamp(320.0, 1000.0)
-                  .toDouble();
-              final height = (constraints.maxHeight - 32)
-                  .clamp(360.0, 640.0)
-                  .toDouble();
-              final left = (constraints.maxWidth - width) / 2;
-              final top = (constraints.maxHeight - height) / 2;
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                _controller.setWindowRect(
-                  Rect.fromLTWH(
-                    left > 0 ? left : 0,
-                    top > 0 ? top : 0,
-                    width,
-                    height,
-                  ),
-                );
-              });
-            }
+  Widget _buildOverlay(BuildContext context) {
+    return CallbackShortcuts(
+      bindings: {
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyR):
+            _toggleRecordingFromShortcut,
+        LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.keyR):
+            _toggleRecordingFromShortcut,
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyK):
+            _clearLogsFromShortcut,
+        LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.keyK):
+            _clearLogsFromShortcut,
+        LogicalKeySet(LogicalKeyboardKey.f12): _toggleWindowFromShortcut,
+      },
+      child: Focus(
+        autofocus: true,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return ValueListenableBuilder<OverlayStateData>(
+              valueListenable: _controller,
+              builder: (context, state, child) {
+                if (state.fabPosition == null) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _controller.setInitialFabPosition(
+                      Offset(
+                        constraints.maxWidth - 70.0,
+                        constraints.maxHeight - 70.0,
+                      ),
+                    );
+                  });
+                }
 
-            return Directionality(
-              textDirection: TextDirection.ltr,
-              child: Stack(
-                children: [
-                  widget.child,
-                  if (!state.isOpen && state.fabPosition != null)
-                    Positioned(
-                      left: state.fabPosition!.dx,
-                      top: state.fabPosition!.dy,
-                      child: GestureDetector(
-                        onPanUpdate: (details) =>
-                            _controller.updateFabPosition(details.delta),
-                        child: FloatingActionButton(
-                          heroTag: 'dio_network_inspector_fab',
-                          mini: true,
-                          onPressed: () => _controller.toggleOpen(true),
-                          backgroundColor: Colors.blueGrey.shade800,
-                          child: const Icon(
-                            Icons.network_check,
-                            color: Colors.white,
+                if (state.windowRect == null) {
+                  final width = (constraints.maxWidth - 32)
+                      .clamp(320.0, 1000.0)
+                      .toDouble();
+                  final height = (constraints.maxHeight - 32)
+                      .clamp(360.0, 640.0)
+                      .toDouble();
+                  final left = (constraints.maxWidth - width) / 2;
+                  final top = (constraints.maxHeight - height) / 2;
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _controller.setWindowRect(
+                      Rect.fromLTWH(
+                        left > 0 ? left : 0,
+                        top > 0 ? top : 0,
+                        width,
+                        height,
+                      ),
+                    );
+                  });
+                }
+
+                return Directionality(
+                  textDirection: TextDirection.ltr,
+                  child: Stack(
+                    children: [
+                      widget.child,
+                      if (!state.isOpen && state.fabPosition != null)
+                        Positioned(
+                          left: state.fabPosition!.dx,
+                          top: state.fabPosition!.dy,
+                          child: GestureDetector(
+                            onPanUpdate: (details) =>
+                                _controller.updateFabPosition(details.delta),
+                            child: Semantics(
+                              label: 'Open inspector, shortcut Fn+F12',
+                              button: true,
+                              child: FloatingActionButton(
+                                heroTag: 'dio_network_inspector_fab',
+                                mini: true,
+                                onPressed: () => _controller.toggleOpen(true),
+                                backgroundColor: Colors.blueGrey.shade800,
+                                child: const Icon(
+                                  Icons.network_check,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
-                  if (state.isOpen && state.windowRect != null)
-                    ResizableWindow(
-                      initialRect: state.windowRect!,
-                      onRectChanged: _controller.setWindowRect,
-                      header: _buildHeader(),
-                      body: const InspectorWindowContentWidget(),
-                      onClose: () => _controller.toggleOpen(false),
-                    ),
-                ],
-              ),
+                      if (state.isOpen && state.windowRect != null)
+                        ResizableWindow(
+                          initialRect: state.windowRect!,
+                          onRectChanged: _controller.setWindowRect,
+                          header: _buildHeader(),
+                          body: InspectorWindowContentWidget(
+                            controller: _windowContentController,
+                          ),
+                          onClose: () => _controller.toggleOpen(false),
+                        ),
+                    ],
+                  ),
+                );
+              },
             );
           },
-        );
-      },
+        ),
+      ),
     );
   }
 }

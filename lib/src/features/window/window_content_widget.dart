@@ -5,7 +5,9 @@ import '../request_detail/detail_pane_widget.dart';
 import '../notes/notes_pane_widget.dart';
 
 class InspectorWindowContentWidget extends StatefulWidget {
-  const InspectorWindowContentWidget({super.key});
+  final WindowContentController? controller;
+
+  const InspectorWindowContentWidget({super.key, this.controller});
 
   @override
   State<InspectorWindowContentWidget> createState() =>
@@ -15,16 +17,18 @@ class InspectorWindowContentWidget extends StatefulWidget {
 class _InspectorWindowContentWidgetState
     extends State<InspectorWindowContentWidget> {
   late WindowContentController _controller;
+  late bool _ownsController;
 
   @override
   void initState() {
     super.initState();
-    _controller = WindowContentController()..init();
+    _ownsController = widget.controller == null;
+    _controller = widget.controller ?? (WindowContentController()..init());
   }
 
   @override
   void dispose() {
-    _controller.disposeController();
+    if (_ownsController) _controller.disposeController();
     super.dispose();
   }
 
