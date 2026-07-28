@@ -16,11 +16,17 @@ class InspectorDatabasePaneWidget extends StatefulWidget {
 
 class _InspectorDatabasePaneWidgetState
     extends State<InspectorDatabasePaneWidget> {
+  static const _allEnumValues = '__dio_inspector_all_enum_values__';
+  static const _nullEnumValue = '__dio_inspector_null_enum_value__';
+
   final _queryController = TextEditingController();
   MySqlDatabaseClient? _client;
   List<DatabaseTable> _tables = const [];
+  List<DatabaseColumn> _tableColumns = const [];
   DatabasePage? _page;
   String? _selectedTable;
+  String? _enumFilterColumn;
+  String? _enumFilterValue;
   String? _error;
   bool _isBusy = false;
   int _offset = 0;
@@ -71,8 +77,11 @@ class _InspectorDatabasePaneWidgetState
     setState(() {
       _client = null;
       _tables = const [];
+      _tableColumns = const [];
       _page = null;
       _selectedTable = null;
+      _enumFilterColumn = null;
+      _enumFilterValue = null;
       _offset = 0;
       _isBusy = false;
     });
@@ -105,15 +114,28 @@ class _InspectorDatabasePaneWidgetState
       _error = null;
     });
     try {
+      final isNewTable = _selectedTable != table;
+      final columns = await client.listColumns(table);
+      final enumColumn = _findEnumColumn(
+        columns,
+        isNewTable ? null : _enumFilterColumn,
+      );
       final page = await client.fetchRows(
         table: table,
         offset: offset,
         limit: config.pageSize,
+        filter: _tableFilterFor(
+          enumColumn,
+          isNewTable ? null : _enumFilterValue,
+        ),
       );
       if (!mounted) return;
       setState(() {
         _selectedTable = table;
+        _tableColumns = columns;
         _page = page;
+        _enumFilterColumn = enumColumn?.name;
+        _enumFilterValue = isNewTable ? null : _enumFilterValue;
         _offset = offset;
       });
     } catch (error) {
@@ -145,6 +167,9 @@ class _InspectorDatabasePaneWidgetState
       if (!mounted) return;
       setState(() {
         _selectedTable = null;
+        _tableColumns = const [];
+        _enumFilterColumn = null;
+        _enumFilterValue = null;
         _page = page;
         _offset = 0;
       });
@@ -161,6 +186,41 @@ class _InspectorDatabasePaneWidgetState
       if (secret.isNotEmpty) message = message.replaceAll(secret, '•••');
     }
     return message;
+  }
+
+  DatabaseColumn? _findEnumColumn(List<DatabaseColumn> columns, String? name) {
+    if (name == null) return null;
+    for (final column in columns) {
+      if (column.name == name && column.enumValues.isNotEmpty) return column;
+    }
+    return null;
+  }
+
+  DatabaseTableFilter? _tableFilterFor(DatabaseColumn? column, String? value) {
+    if (column == null || value == null || value == _allEnumValues) {
+      return null;
+    }
+    if (value == _nullEnumValue) {
+      return DatabaseTableFilter.isNull(column: column.name);
+    }
+    return DatabaseTableFilter.equals(column: column.name, value: value);
+  }
+
+  Future<void> _changeEnumColumn(String? column) async {
+    final table = _selectedTable;
+    if (table == null) return;
+    setState(() {
+      _enumFilterColumn = column;
+      _enumFilterValue = column == null ? null : _allEnumValues;
+    });
+    await _openTable(table);
+  }
+
+  Future<void> _changeEnumValue(String? value) async {
+    final table = _selectedTable;
+    if (table == null) return;
+    setState(() => _enumFilterValue = value);
+    await _openTable(table);
   }
 
   @override
@@ -388,6 +448,7 @@ class _InspectorDatabasePaneWidgetState
             ],
           ),
         ),
+        if (_selectedTable != null) _enumFilters(),
         Expanded(child: _dataTable(page)),
         if (_selectedTable != null) _pagination(config, page),
       ],
@@ -439,6 +500,89 @@ class _InspectorDatabasePaneWidgetState
               )
               .toList(growable: false),
         ),
+      ),
+    );
+  }
+
+  Widget _enumFilters() {
+    final enumColumns = _tableColumns
+        .where((column) => column.enumValues.isNotEmpty)
+        .toList(growable: false);
+    if (enumColumns.isEmpty) return const SizedBox.shrink();
+    final selected = _findEnumColumn(_tableColumns, _enumFilterColumn);
+    final values = selected?.enumValues ?? const <String>[];
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          const Text(
+            'Enum filter',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+          ),
+          SizedBox(
+            width: 180,
+            child: DropdownButtonFormField<String>(
+              key: ValueKey<String?>(_enumFilterColumn),
+              initialValue: _enumFilterColumn,
+              isDense: true,
+              decoration: const InputDecoration(
+                labelText: 'Column',
+                border: OutlineInputBorder(),
+              ),
+              items: [
+                const DropdownMenuItem<String>(
+                  value: null,
+                  child: Text('No enum filter'),
+                ),
+                ...enumColumns.map(
+                  (column) => DropdownMenuItem<String>(
+                    value: column.name,
+                    child: Text(column.name, overflow: TextOverflow.ellipsis),
+                  ),
+                ),
+              ],
+              onChanged: _isBusy ? null : _changeEnumColumn,
+            ),
+          ),
+          if (selected != null)
+            SizedBox(
+              width: 180,
+              child: DropdownButtonFormField<String>(
+                key: ValueKey<String>(
+                  '\${_enumFilterColumn ?? '
+                  '}:\${_enumFilterValue ?? _allEnumValues}',
+                ),
+                initialValue: _enumFilterValue ?? _allEnumValues,
+                isDense: true,
+                decoration: const InputDecoration(
+                  labelText: 'Value',
+                  border: OutlineInputBorder(),
+                ),
+                items: [
+                  const DropdownMenuItem(
+                    value: _allEnumValues,
+                    child: Text('All values'),
+                  ),
+                  ...values.map(
+                    (value) => DropdownMenuItem(
+                      value: value,
+                      child: Text(value, overflow: TextOverflow.ellipsis),
+                    ),
+                  ),
+                  if (selected.isNullable)
+                    const DropdownMenuItem(
+                      value: _nullEnumValue,
+                      child: Text('NULL'),
+                    ),
+                ],
+                onChanged: _isBusy ? null : _changeEnumValue,
+              ),
+            ),
+        ],
       ),
     );
   }

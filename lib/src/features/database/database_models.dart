@@ -68,6 +68,23 @@ class DatabaseColumn {
   final List<String> enumValues;
 }
 
+/// A read-only filter created from known table metadata.
+///
+/// The client quotes [column] as an identifier and binds [value] as a query
+/// parameter. It is not built from arbitrary SQL entered by the user.
+class DatabaseTableFilter {
+  const DatabaseTableFilter.equals({required this.column, required this.value})
+    : matchesNull = false;
+
+  const DatabaseTableFilter.isNull({required this.column})
+    : value = null,
+      matchesNull = true;
+
+  final String column;
+  final String? value;
+  final bool matchesNull;
+}
+
 class DatabasePage {
   const DatabasePage({
     required this.columns,

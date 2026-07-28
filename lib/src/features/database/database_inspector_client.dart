@@ -11,6 +11,7 @@ abstract interface class DatabaseInspectorClient {
     required String table,
     required int offset,
     required int limit,
+    DatabaseTableFilter? filter,
   });
   Future<DatabasePage> executeReadOnly(String sql);
 }

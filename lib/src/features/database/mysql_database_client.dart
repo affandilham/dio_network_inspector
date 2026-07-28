@@ -82,7 +82,7 @@ class MySqlDatabaseClient implements DatabaseInspectorClient {
             name: values['name'] ?? '',
             type: type,
             isNullable: (values['nullable'] ?? '').toUpperCase() == 'YES',
-            enumValues: _enumValues(type),
+            enumValues: parseEnumValues(type),
           );
         })
         .where((column) => column.name.isNotEmpty)
@@ -94,15 +94,29 @@ class MySqlDatabaseClient implements DatabaseInspectorClient {
     required String table,
     required int offset,
     required int limit,
+    DatabaseTableFilter? filter,
   }) async {
     final safeLimit = limit.clamp(1, config.maxPageSize);
     final safeOffset = offset < 0 ? 0 : offset;
+    var whereClause = '';
+    final parameters = <String, dynamic>{};
+    if (filter != null) {
+      final column = _quoteIdentifier(filter.column);
+      if (filter.matchesNull) {
+        whereClause = ' WHERE $column IS NULL';
+      } else {
+        whereClause = ' WHERE $column = :filterValue';
+        parameters['filterValue'] = filter.value;
+      }
+    }
     final result = await _requireConnection().execute(
       <String>[
         'SELECT * FROM ',
         _quoteIdentifier(table),
+        whereClause,
         ' LIMIT $safeLimit OFFSET $safeOffset',
       ].join(),
+      parameters,
     );
     return _pageFromResult(
       result,
@@ -169,7 +183,7 @@ class MySqlDatabaseClient implements DatabaseInspectorClient {
     return quote + identifier.replaceAll(quote, quote + quote) + quote;
   }
 
-  static List<String> _enumValues(String columnType) {
+  static List<String> parseEnumValues(String columnType) {
     if (!columnType.toLowerCase().startsWith('enum(') ||
         !columnType.endsWith(')')) {
       return const [];

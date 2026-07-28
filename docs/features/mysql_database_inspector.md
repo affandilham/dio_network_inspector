@@ -22,8 +22,9 @@ selesai.
   template dan parser penuh untuk statement kompleks.
 - [x] **Database panel:** status koneksi, daftar tabel, data tabel,
   paging, refresh manual, dan disconnect.
-- [ ] **TODO — Metadata kolom:** tipe data, JSON preview, serta dropdown filter
-  untuk MySQL `ENUM`.
+- [x] **Metadata ENUM:** nilai valid dibaca dari schema dan dapat digunakan
+  sebagai dropdown filter parameterized, termasuk opsi `NULL` bila diizinkan.
+- [ ] **TODO — Metadata kolom lanjutan:** tampilan tipe data dan JSON preview.
 - [ ] **TODO — SQL editor:** syntax highlighting, autocomplete keyword/tabel/
   kolom, alias `FROM`/`JOIN`, dan Highlight Active Statement.
 - [ ] **TODO — Query tabs:** tab tanpa batas lisensi, restore draft, satu
