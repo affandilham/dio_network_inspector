@@ -5,6 +5,7 @@ import '../../dio_network_inspector.dart';
 import 'database_models.dart';
 import 'mysql_database_client.dart';
 import 'read_only_sql_validator.dart';
+import 'sql_autocomplete.dart';
 
 class InspectorDatabasePaneWidget extends StatefulWidget {
   const InspectorDatabasePaneWidget({super.key});
@@ -23,6 +24,8 @@ class _InspectorDatabasePaneWidgetState
   MySqlDatabaseClient? _client;
   List<DatabaseTable> _tables = const [];
   List<DatabaseColumn> _tableColumns = const [];
+  final Map<String, List<DatabaseColumn>> _columnsByTable = {};
+  List<SqlAutocompleteSuggestion> _autocompleteSuggestions = const [];
   DatabasePage? _page;
   String? _selectedTable;
   String? _enumFilterColumn;
@@ -35,7 +38,14 @@ class _InspectorDatabasePaneWidgetState
       DioNetworkInspector.instance.databaseConfig;
 
   @override
+  void initState() {
+    super.initState();
+    _queryController.addListener(_refreshAutocomplete);
+  }
+
+  @override
   void dispose() {
+    _queryController.removeListener(_refreshAutocomplete);
     _queryController.dispose();
     _client?.disconnect();
     super.dispose();
@@ -59,6 +69,7 @@ class _InspectorDatabasePaneWidgetState
       setState(() {
         _client = client;
         _tables = tables;
+        _autocompleteSuggestions = _currentAutocompleteSuggestions;
       });
     } catch (error) {
       await client.disconnect();
@@ -78,6 +89,8 @@ class _InspectorDatabasePaneWidgetState
       _client = null;
       _tables = const [];
       _tableColumns = const [];
+      _columnsByTable.clear();
+      _autocompleteSuggestions = const [];
       _page = null;
       _selectedTable = null;
       _enumFilterColumn = null;
@@ -97,7 +110,12 @@ class _InspectorDatabasePaneWidgetState
     });
     try {
       final tables = await client.listTables();
-      if (mounted) setState(() => _tables = tables);
+      if (mounted) {
+        setState(() {
+          _tables = tables;
+          _autocompleteSuggestions = _currentAutocompleteSuggestions;
+        });
+      }
     } catch (error) {
       if (mounted) setState(() => _error = _safeError(error, config));
     } finally {
@@ -133,6 +151,8 @@ class _InspectorDatabasePaneWidgetState
       setState(() {
         _selectedTable = table;
         _tableColumns = columns;
+        _columnsByTable[table] = columns;
+        _autocompleteSuggestions = _currentAutocompleteSuggestions;
         _page = page;
         _enumFilterColumn = enumColumn?.name;
         _enumFilterValue = isNewTable ? null : _enumFilterValue;
@@ -163,7 +183,7 @@ class _InspectorDatabasePaneWidgetState
       _error = null;
     });
     try {
-      final page = await client.executeReadOnly(_queryController.text);
+      final page = await client.executeReadOnly(validation.executionSql!);
       if (!mounted) return;
       setState(() {
         _selectedTable = null;
@@ -187,6 +207,46 @@ class _InspectorDatabasePaneWidgetState
     }
     return message;
   }
+
+  List<SqlAutocompleteSuggestion> get _currentAutocompleteSuggestions =>
+      SqlAutocomplete.suggestions(
+        editingValue: _queryController.value,
+        tables: _tables,
+        columnsByTable: _columnsByTable,
+      );
+
+  void _refreshAutocomplete() {
+    if (!mounted) return;
+    final suggestions = _currentAutocompleteSuggestions;
+    if (_sameSuggestions(suggestions, _autocompleteSuggestions)) return;
+    setState(() => _autocompleteSuggestions = suggestions);
+  }
+
+  bool _sameSuggestions(
+    List<SqlAutocompleteSuggestion> first,
+    List<SqlAutocompleteSuggestion> second,
+  ) {
+    if (first.length != second.length) return false;
+    for (var index = 0; index < first.length; index++) {
+      if (first[index].value != second[index].value ||
+          first[index].detail != second[index].detail) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  void _insertAutocompleteSuggestion(SqlAutocompleteSuggestion suggestion) {
+    _queryController.value = SqlAutocomplete.applySuggestion(
+      editingValue: _queryController.value,
+      value: suggestion.value,
+    );
+  }
+
+  ReadOnlySqlValidation get _queryValidation => ReadOnlySqlValidator.validate(
+    _queryController.text,
+    maximumRows: _config?.maxPageSize ?? 100,
+  );
 
   DatabaseColumn? _findEnumColumn(List<DatabaseColumn> columns, String? name) {
     if (name == null) return null;
@@ -396,6 +456,7 @@ class _InspectorDatabasePaneWidgetState
           children: [
             TextField(
               controller: _queryController,
+              onTap: _refreshAutocomplete,
               minLines: 2,
               maxLines: 4,
               style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
@@ -405,11 +466,28 @@ class _InspectorDatabasePaneWidgetState
                 border: OutlineInputBorder(),
               ),
             ),
+            _autocompleteList(),
+            if (_queryController.text.isNotEmpty &&
+                !_queryValidation.isAllowed) ...[
+              const SizedBox(height: 4),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  _queryValidation.reason ?? 'Query tidak dapat dijalankan.',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.error,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 8),
             Align(
               alignment: Alignment.centerRight,
               child: FilledButton.icon(
-                onPressed: _isBusy ? null : _runQuery,
+                onPressed: _isBusy || !_queryValidation.isAllowed
+                    ? null
+                    : _runQuery,
                 icon: const Icon(Icons.play_arrow),
                 label: const Text('Run read-only query'),
               ),
@@ -421,6 +499,45 @@ class _InspectorDatabasePaneWidgetState
       Expanded(child: _resultView(config)),
     ],
   );
+
+  Widget _autocompleteList() {
+    if (_autocompleteSuggestions.isEmpty) return const SizedBox.shrink();
+    return Container(
+      constraints: const BoxConstraints(maxHeight: 156),
+      margin: const EdgeInsets.only(top: 4),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border.all(color: Theme.of(context).dividerColor),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: ListView.builder(
+        shrinkWrap: true,
+        itemCount: _autocompleteSuggestions.length,
+        itemBuilder: (context, index) {
+          final suggestion = _autocompleteSuggestions[index];
+          return ListTile(
+            dense: true,
+            visualDensity: VisualDensity.compact,
+            leading: Icon(_autocompleteIcon(suggestion.kind), size: 17),
+            title: Text(suggestion.value),
+            trailing: suggestion.detail == null
+                ? null
+                : Text(
+                    suggestion.detail!,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+            onTap: () => _insertAutocompleteSuggestion(suggestion),
+          );
+        },
+      ),
+    );
+  }
+
+  IconData _autocompleteIcon(SqlAutocompleteKind kind) => switch (kind) {
+    SqlAutocompleteKind.keyword => Icons.terminal_outlined,
+    SqlAutocompleteKind.table => Icons.table_chart_outlined,
+    SqlAutocompleteKind.column => Icons.view_column_outlined,
+  };
 
   Widget _resultView(MySqlInspectorConfig config) {
     final page = _page;

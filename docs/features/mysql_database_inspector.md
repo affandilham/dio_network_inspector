@@ -25,8 +25,10 @@ selesai.
 - [x] **Metadata ENUM:** nilai valid dibaca dari schema dan dapat digunakan
   sebagai dropdown filter parameterized, termasuk opsi `NULL` bila diizinkan.
 - [ ] **TODO — Metadata kolom lanjutan:** tampilan tipe data dan JSON preview.
-- [ ] **TODO — SQL editor:** syntax highlighting, autocomplete keyword/tabel/
-  kolom, alias `FROM`/`JOIN`, dan Highlight Active Statement.
+- [x] **Autocomplete dasar:** keyword MySQL, tabel sesi aktif, serta kolom
+  metadata yang sudah dibuka, termasuk prefix alias `FROM`/`JOIN` sederhana.
+- [ ] **TODO — SQL editor lanjutan:** syntax highlighting, katalog kolom penuh,
+  parsing alias/CTE kompleks, dan Highlight Active Statement.
 - [ ] **TODO — Query tabs:** tab tanpa batas lisensi, restore draft, satu
   koneksi bersama, dan eviction hasil query tab tak aktif.
 - [ ] **TODO — Hardening:** error aman, lifecycle koneksi, batas RAM, unit test,
