@@ -11,15 +11,18 @@ import '../../components/base_text.dart';
 import '../../components/base_icon_button.dart';
 import '../../components/base_container.dart';
 import '../../dio_network_inspector.dart';
+import '../database/database_models.dart';
 
 class DioInspectorOverlay extends StatefulWidget {
   final Widget child;
   final GlobalKey<NavigatorState>? navigatorKey;
+  final MySqlInspectorConfig? databaseConfig;
 
   const DioInspectorOverlay({
     super.key,
     required this.child,
     this.navigatorKey,
+    this.databaseConfig,
   });
 
   @override
@@ -49,6 +52,7 @@ class _DioInspectorOverlayState extends State<DioInspectorOverlay> {
     super.initState();
     _controller = OverlayController();
     _windowContentController = WindowContentController()..init();
+    DioNetworkInspector.instance.configureDatabase(widget.databaseConfig);
   }
 
   @override
@@ -138,9 +142,23 @@ class _DioInspectorOverlayState extends State<DioInspectorOverlay> {
                   size: InspectorDimensions.iconM,
                   tooltip: 'Notes',
                   onPressed: () =>
-                      DioNetworkInspector.instance.isNotesOpen.value = !isOpen,
+                      _windowContentController.setNotesOpen(!isOpen),
                 ),
               ),
+              if (widget.databaseConfig != null)
+                ValueListenableBuilder<bool>(
+                  valueListenable: DioNetworkInspector.instance.isDatabaseOpen,
+                  builder: (context, isOpen, _) => BaseIconButton(
+                    icon: Icons.storage_outlined,
+                    color: isOpen
+                        ? InspectorColors.primary
+                        : InspectorColors.textSecondary,
+                    size: InspectorDimensions.iconM,
+                    tooltip: 'Database Inspector',
+                    onPressed: () =>
+                        _windowContentController.setDatabaseOpen(!isOpen),
+                  ),
+                ),
               BaseIconButton(
                 icon: Icons.file_upload_outlined,
                 color: InspectorColors.textSecondary,

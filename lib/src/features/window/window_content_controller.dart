@@ -6,11 +6,13 @@ class WindowContentStateData {
   final NetworkRequest? selectedRequest;
   final double? leftPaneWidth;
   final bool isNotesOpen;
+  final bool isDatabaseOpen;
 
   WindowContentStateData({
     this.selectedRequest,
     this.leftPaneWidth,
     this.isNotesOpen = false,
+    this.isDatabaseOpen = false,
   });
 
   WindowContentStateData copyWith({
@@ -18,6 +20,7 @@ class WindowContentStateData {
     bool clearSelectedRequest = false,
     double? leftPaneWidth,
     bool? isNotesOpen,
+    bool? isDatabaseOpen,
   }) {
     return WindowContentStateData(
       selectedRequest: clearSelectedRequest
@@ -25,6 +28,7 @@ class WindowContentStateData {
           : (selectedRequest ?? this.selectedRequest),
       leftPaneWidth: leftPaneWidth ?? this.leftPaneWidth,
       isNotesOpen: isNotesOpen ?? this.isNotesOpen,
+      isDatabaseOpen: isDatabaseOpen ?? this.isDatabaseOpen,
     );
   }
 }
@@ -37,17 +41,25 @@ class WindowContentController
   void init() {
     DioNetworkInspector.instance.requests.addListener(_onRequestsChanged);
     DioNetworkInspector.instance.isNotesOpen.addListener(_onNotesChanged);
+    DioNetworkInspector.instance.isDatabaseOpen.addListener(_onDatabaseChanged);
   }
 
   @override
   void disposeController() {
     DioNetworkInspector.instance.requests.removeListener(_onRequestsChanged);
     DioNetworkInspector.instance.isNotesOpen.removeListener(_onNotesChanged);
+    DioNetworkInspector.instance.isDatabaseOpen.removeListener(
+      _onDatabaseChanged,
+    );
     super.disposeController();
   }
 
   void _onNotesChanged() => value = value.copyWith(
     isNotesOpen: DioNetworkInspector.instance.isNotesOpen.value,
+  );
+
+  void _onDatabaseChanged() => value = value.copyWith(
+    isDatabaseOpen: DioNetworkInspector.instance.isDatabaseOpen.value,
   );
 
   void _onRequestsChanged() {
@@ -59,10 +71,21 @@ class WindowContentController
 
   void selectRequest(NetworkRequest? req) {
     DioNetworkInspector.instance.isNotesOpen.value = false;
+    DioNetworkInspector.instance.isDatabaseOpen.value = false;
     value = value.copyWith(
       selectedRequest: req,
       clearSelectedRequest: req == null,
     );
+  }
+
+  void setNotesOpen(bool open) {
+    DioNetworkInspector.instance.isNotesOpen.value = open;
+    if (open) DioNetworkInspector.instance.isDatabaseOpen.value = false;
+  }
+
+  void setDatabaseOpen(bool open) {
+    DioNetworkInspector.instance.isNotesOpen.value = false;
+    DioNetworkInspector.instance.isDatabaseOpen.value = open;
   }
 
   void updateLeftPaneWidth(double dx, double maxWidth) {

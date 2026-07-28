@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'models/network_request.dart';
+import 'features/database/database_models.dart';
 
 class DioNetworkInspector {
   static final DioNetworkInspector _instance = DioNetworkInspector._internal();
@@ -12,6 +13,8 @@ class DioNetworkInspector {
   final ValueNotifier<List<NetworkRequest>> requests = ValueNotifier([]);
   final ValueNotifier<bool> isRecording = ValueNotifier(true);
   final ValueNotifier<bool> isNotesOpen = ValueNotifier(false);
+  final ValueNotifier<bool> isDatabaseOpen = ValueNotifier(false);
+  MySqlInspectorConfig? databaseConfig;
   static const int maxRequests = 200;
 
   int _idCounter = 0;
@@ -40,6 +43,15 @@ class DioNetworkInspector {
 
   void clear() {
     requests.value = [];
+  }
+
+  /// Sets an in-memory database configuration supplied by the host app.
+  ///
+  /// The inspector deliberately does not persist this value or add it to
+  /// exported sessions.
+  void configureDatabase(MySqlInspectorConfig? config) {
+    databaseConfig = config;
+    if (config == null) isDatabaseOpen.value = false;
   }
 
   String exportSession() => jsonEncode({

@@ -3,6 +3,7 @@ import 'window_content_controller.dart';
 import '../request_list/request_list_widget.dart';
 import '../request_detail/detail_pane_widget.dart';
 import '../notes/notes_pane_widget.dart';
+import '../database/database_inspector_widget.dart';
 
 class InspectorWindowContentWidget extends StatefulWidget {
   final WindowContentController? controller;
@@ -51,7 +52,9 @@ class _InspectorWindowContentWidgetState
                   }
 
                   if (constraints.maxWidth < 200 ||
-                      (state.selectedRequest == null && !state.isNotesOpen)) {
+                      (state.selectedRequest == null &&
+                          !state.isNotesOpen &&
+                          !state.isDatabaseOpen)) {
                     return InspectorRequestListWidget(
                       selectedRequest: state.selectedRequest,
                       onSelected: _controller.selectRequest,
@@ -96,6 +99,8 @@ class _InspectorWindowContentWidgetState
                       Expanded(
                         child: state.isNotesOpen
                             ? const InspectorNotesPaneWidget()
+                            : state.isDatabaseOpen
+                            ? const InspectorDatabasePaneWidget()
                             : InspectorDetailPaneWidget(
                                 request: state.selectedRequest!,
                                 onClose: () => _controller.selectRequest(null),
