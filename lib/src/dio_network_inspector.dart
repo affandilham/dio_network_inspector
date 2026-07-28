@@ -12,6 +12,8 @@ class DioNetworkInspector {
   final ValueNotifier<List<NetworkRequest>> requests = ValueNotifier([]);
   final ValueNotifier<bool> isRecording = ValueNotifier(true);
   final ValueNotifier<bool> isNotesOpen = ValueNotifier(false);
+  final ValueNotifier<bool> isUrlTesterOpen = ValueNotifier(false);
+  final ValueNotifier<bool> isSidePaneOpen = ValueNotifier(true);
   static const int maxRequests = 200;
 
   int _idCounter = 0;

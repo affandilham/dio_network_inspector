@@ -6,11 +6,15 @@ class WindowContentStateData {
   final NetworkRequest? selectedRequest;
   final double? leftPaneWidth;
   final bool isNotesOpen;
+  final bool isUrlTesterOpen;
+  final bool isSidePaneOpen;
 
   WindowContentStateData({
     this.selectedRequest,
     this.leftPaneWidth,
     this.isNotesOpen = false,
+    this.isUrlTesterOpen = false,
+    this.isSidePaneOpen = true,
   });
 
   WindowContentStateData copyWith({
@@ -18,6 +22,8 @@ class WindowContentStateData {
     bool clearSelectedRequest = false,
     double? leftPaneWidth,
     bool? isNotesOpen,
+    bool? isUrlTesterOpen,
+    bool? isSidePaneOpen,
   }) {
     return WindowContentStateData(
       selectedRequest: clearSelectedRequest
@@ -25,6 +31,8 @@ class WindowContentStateData {
           : (selectedRequest ?? this.selectedRequest),
       leftPaneWidth: leftPaneWidth ?? this.leftPaneWidth,
       isNotesOpen: isNotesOpen ?? this.isNotesOpen,
+      isUrlTesterOpen: isUrlTesterOpen ?? this.isUrlTesterOpen,
+      isSidePaneOpen: isSidePaneOpen ?? this.isSidePaneOpen,
     );
   }
 }
@@ -37,18 +45,42 @@ class WindowContentController
   void init() {
     DioNetworkInspector.instance.requests.addListener(_onRequestsChanged);
     DioNetworkInspector.instance.isNotesOpen.addListener(_onNotesChanged);
+    DioNetworkInspector.instance.isUrlTesterOpen.addListener(_onUrlTesterChanged);
+    DioNetworkInspector.instance.isSidePaneOpen.addListener(_onSidePaneChanged);
   }
 
   @override
   void disposeController() {
     DioNetworkInspector.instance.requests.removeListener(_onRequestsChanged);
     DioNetworkInspector.instance.isNotesOpen.removeListener(_onNotesChanged);
+    DioNetworkInspector.instance.isUrlTesterOpen.removeListener(_onUrlTesterChanged);
+    DioNetworkInspector.instance.isSidePaneOpen.removeListener(_onSidePaneChanged);
     super.disposeController();
   }
 
-  void _onNotesChanged() => value = value.copyWith(
-    isNotesOpen: DioNetworkInspector.instance.isNotesOpen.value,
-  );
+  void _onNotesChanged() {
+    if (DioNetworkInspector.instance.isNotesOpen.value) {
+      DioNetworkInspector.instance.isUrlTesterOpen.value = false;
+    }
+    value = value.copyWith(
+      isNotesOpen: DioNetworkInspector.instance.isNotesOpen.value,
+    );
+  }
+
+  void _onUrlTesterChanged() {
+    if (DioNetworkInspector.instance.isUrlTesterOpen.value) {
+      DioNetworkInspector.instance.isNotesOpen.value = false;
+    }
+    value = value.copyWith(
+      isUrlTesterOpen: DioNetworkInspector.instance.isUrlTesterOpen.value,
+    );
+  }
+
+  void _onSidePaneChanged() {
+    value = value.copyWith(
+      isSidePaneOpen: DioNetworkInspector.instance.isSidePaneOpen.value,
+    );
+  }
 
   void _onRequestsChanged() {
     if (DioNetworkInspector.instance.requests.value.isEmpty &&
@@ -59,6 +91,7 @@ class WindowContentController
 
   void selectRequest(NetworkRequest? req) {
     DioNetworkInspector.instance.isNotesOpen.value = false;
+    DioNetworkInspector.instance.isUrlTesterOpen.value = false;
     value = value.copyWith(
       selectedRequest: req,
       clearSelectedRequest: req == null,
