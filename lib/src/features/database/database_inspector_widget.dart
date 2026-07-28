@@ -4,6 +4,7 @@ import '../../core/theme/inspector_colors.dart';
 import '../../dio_network_inspector.dart';
 import 'database_models.dart';
 import 'mysql_database_client.dart';
+import 'query_tabs_controller.dart';
 import 'read_only_sql_validator.dart';
 import 'sql_autocomplete.dart';
 
@@ -21,6 +22,7 @@ class _InspectorDatabasePaneWidgetState
   static const _nullEnumValue = '__dio_inspector_null_enum_value__';
 
   final _queryController = TextEditingController();
+  final _queryTabs = QueryTabsController();
   MySqlDatabaseClient? _client;
   List<DatabaseTable> _tables = const [];
   List<DatabaseColumn> _tableColumns = const [];
@@ -40,12 +42,12 @@ class _InspectorDatabasePaneWidgetState
   @override
   void initState() {
     super.initState();
-    _queryController.addListener(_refreshAutocomplete);
+    _queryController.addListener(_onQueryChanged);
   }
 
   @override
   void dispose() {
-    _queryController.removeListener(_refreshAutocomplete);
+    _queryController.removeListener(_onQueryChanged);
     _queryController.dispose();
     _client?.disconnect();
     super.dispose();
@@ -186,6 +188,7 @@ class _InspectorDatabasePaneWidgetState
       final page = await client.executeReadOnly(validation.executionSql!);
       if (!mounted) return;
       setState(() {
+        _queryTabs.updateActiveResult(page);
         _selectedTable = null;
         _tableColumns = const [];
         _enumFilterColumn = null;
@@ -206,6 +209,49 @@ class _InspectorDatabasePaneWidgetState
       if (secret.isNotEmpty) message = message.replaceAll(secret, '•••');
     }
     return message;
+  }
+
+  void _onQueryChanged() {
+    _queryTabs.updateActiveDraft(_queryController.text);
+    _refreshAutocomplete();
+  }
+
+  void _createQueryTab() {
+    if (_isBusy) return;
+    _queryTabs.updateActiveDraft(_queryController.text);
+    _queryTabs.createTab();
+    _showActiveQueryTab();
+  }
+
+  void _selectQueryTab(String id) {
+    if (_isBusy || _queryTabs.active.id == id) return;
+    _queryTabs.updateActiveDraft(_queryController.text);
+    _queryTabs.select(id);
+    _showActiveQueryTab();
+  }
+
+  void _closeQueryTab(String id) {
+    if (_isBusy) return;
+    _queryTabs.updateActiveDraft(_queryController.text);
+    if (!_queryTabs.close(id)) return;
+    _showActiveQueryTab();
+  }
+
+  void _showActiveQueryTab() {
+    final tab = _queryTabs.active;
+    _queryController.value = TextEditingValue(
+      text: tab.draft,
+      selection: TextSelection.collapsed(offset: tab.draft.length),
+    );
+    setState(() {
+      _selectedTable = null;
+      _tableColumns = const [];
+      _enumFilterColumn = null;
+      _enumFilterValue = null;
+      _page = tab.result;
+      _offset = 0;
+      _autocompleteSuggestions = _currentAutocompleteSuggestions;
+    });
   }
 
   List<SqlAutocompleteSuggestion> get _currentAutocompleteSuggestions =>
@@ -450,6 +496,8 @@ class _InspectorDatabasePaneWidgetState
   Widget _content(MySqlInspectorConfig config) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
+      _queryTabsBar(),
+      const Divider(height: 1),
       Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -498,6 +546,38 @@ class _InspectorDatabasePaneWidgetState
       const Divider(height: 1),
       Expanded(child: _resultView(config)),
     ],
+  );
+
+  Widget _queryTabsBar() => SizedBox(
+    height: 44,
+    child: Row(
+      children: [
+        Expanded(
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            itemCount: _queryTabs.tabs.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 6),
+            itemBuilder: (context, index) {
+              final tab = _queryTabs.tabs[index];
+              return InputChip(
+                label: Text(tab.name),
+                selected: _queryTabs.active.id == tab.id,
+                onPressed: _isBusy ? null : () => _selectQueryTab(tab.id),
+                onDeleted: _isBusy || _queryTabs.tabs.length == 1
+                    ? null
+                    : () => _closeQueryTab(tab.id),
+              );
+            },
+          ),
+        ),
+        IconButton(
+          tooltip: 'New query tab',
+          onPressed: _isBusy ? null : _createQueryTab,
+          icon: const Icon(Icons.add),
+        ),
+      ],
+    ),
   );
 
   Widget _autocompleteList() {

@@ -29,8 +29,10 @@ selesai.
   metadata yang sudah dibuka, termasuk prefix alias `FROM`/`JOIN` sederhana.
 - [ ] **TODO — SQL editor lanjutan:** syntax highlighting, katalog kolom penuh,
   parsing alias/CTE kompleks, dan Highlight Active Statement.
-- [ ] **TODO — Query tabs:** tab tanpa batas lisensi, restore draft, satu
-  koneksi bersama, dan eviction hasil query tab tak aktif.
+- [x] **Query tabs dasar:** buat, pindah, dan tutup tab tanpa batas lisensi;
+  draft serta satu halaman hasil per tab memakai satu koneksi bersama.
+- [ ] **TODO — Query tabs lanjutan:** ganti nama, restore lintas sesi,
+  konfirmasi draft sebelum menutup, dan eviction hasil tab tidak aktif.
 - [ ] **TODO — Hardening:** error aman, lifecycle koneksi, batas RAM, unit test,
   dan integration test memakai MySQL lokal/ephemeral.
 - [ ] **TODO — Request-to-table mapping:** aksi Inspect related data dari request
