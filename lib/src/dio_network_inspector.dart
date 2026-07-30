@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'models/network_request.dart';
+import 'models/split_orientation.dart';
 
 class DioNetworkInspector {
   static final DioNetworkInspector _instance = DioNetworkInspector._internal();
@@ -14,7 +15,15 @@ class DioNetworkInspector {
   final ValueNotifier<bool> isNotesOpen = ValueNotifier(false);
   final ValueNotifier<bool> isUrlTesterOpen = ValueNotifier(false);
   final ValueNotifier<bool> isSidePaneOpen = ValueNotifier(true);
+  final ValueNotifier<SplitOrientation> splitOrientation =
+      ValueNotifier(SplitOrientation.side);
   static const int maxRequests = 200;
+
+  void toggleSplitOrientation() {
+    splitOrientation.value = splitOrientation.value == SplitOrientation.side
+        ? SplitOrientation.bottom
+        : SplitOrientation.side;
+  }
 
   int _idCounter = 0;
 
