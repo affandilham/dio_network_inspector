@@ -18,6 +18,7 @@ class DetailRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = InspectorColors.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: InspectorDimensions.spacingXs),
       child: Row(
@@ -28,13 +29,13 @@ class DetailRow extends StatelessWidget {
             child: BaseText(
               label,
               style: InspectorTypography.body.copyWith(fontWeight: FontWeight.w600),
-              color: InspectorColors.textSecondary,
+              color: colors.textSecondary,
             ),
           ),
           Expanded(
             child: SelectableText(
               value,
-              style: InspectorTypography.body,
+              style: InspectorTypography.body.copyWith(color: colors.textPrimary),
             ),
           ),
         ],

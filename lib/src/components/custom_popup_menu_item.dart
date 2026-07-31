@@ -34,18 +34,19 @@ class _CustomPopupMenuItemState<T> extends State<CustomPopupMenuItem<T>> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = InspectorColors.of(context);
     final primaryColor = theme.colorScheme.primary;
     final hoverBgColor = theme.colorScheme.primaryContainer;
 
     final textColor = widget.isSelected
         ? primaryColor
-        : (_isHovered ? primaryColor : InspectorColors.textPrimary);
-    
+        : (_isHovered ? primaryColor : colors.textPrimary);
+
     final iconColor = widget.isSelected
         ? primaryColor
-        : (_isHovered ? primaryColor : InspectorColors.textBlueGrey);
+        : (_isHovered ? primaryColor : colors.textBlueGrey);
 
-    final bgColor = _isHovered 
+    final bgColor = _isHovered
         ? hoverBgColor
         : Colors.transparent;
 
@@ -80,7 +81,7 @@ class _CustomPopupMenuItemState<T> extends State<CustomPopupMenuItem<T>> {
             BaseText(
               widget.text,
               style: InspectorTypography.body.copyWith(
-                fontWeight: (_isHovered || widget.isSelected) 
+                fontWeight: (_isHovered || widget.isSelected)
                     ? FontWeight.w600 : FontWeight.w500,
               ),
               color: textColor,

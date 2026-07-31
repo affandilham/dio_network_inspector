@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../core/theme/inspector_dimensions.dart';
 import '../core/theme/inspector_colors.dart';
+import '../core/theme/inspector_dimensions.dart';
 
 class BaseIconButton extends StatelessWidget {
   final IconData icon;
@@ -14,7 +14,7 @@ class BaseIconButton extends StatelessWidget {
     super.key,
     required this.icon,
     this.onPressed,
-    this.color = InspectorColors.textBlueGrey,
+    this.color,
     this.size = InspectorDimensions.iconM,
     this.tooltip,
     this.padding = EdgeInsets.zero,
@@ -22,8 +22,10 @@ class BaseIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Resolve color: explicit prop > theme-aware default.
+    final effectiveColor = color ?? InspectorColors.of(context).textBlueGrey;
     return IconButton(
-      icon: Icon(icon, color: color, size: size),
+      icon: Icon(icon, color: effectiveColor, size: size),
       onPressed: onPressed,
       tooltip: tooltip,
       splashRadius: 16,

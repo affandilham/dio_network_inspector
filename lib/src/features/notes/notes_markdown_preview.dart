@@ -25,16 +25,17 @@ class NotesMarkdownPreview extends StatelessWidget {
     final blocks = parser.parse();
     final headings = parser.headings();
 
+    final colors = InspectorColors.of(context);
     return Container(
       width: double.infinity,
-      decoration: const BoxDecoration(
-        color: InspectorColors.surface,
+      decoration: BoxDecoration(
+        color: colors.surface,
         border: Border(
-          left: BorderSide(color: InspectorColors.divider),
-          right: BorderSide(color: InspectorColors.divider),
-          bottom: BorderSide(color: InspectorColors.divider),
+          left: BorderSide(color: colors.divider),
+          right: BorderSide(color: colors.divider),
+          bottom: BorderSide(color: colors.divider),
         ),
-        borderRadius: BorderRadius.vertical(
+        borderRadius: const BorderRadius.vertical(
           bottom: Radius.circular(InspectorDimensions.radiusL),
         ),
       ),

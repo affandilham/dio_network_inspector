@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' show ThemeMode;
 import 'dart:convert';
 import 'models/network_request.dart';
 import 'models/split_orientation.dart';
@@ -17,6 +18,10 @@ class DioNetworkInspector {
   final ValueNotifier<bool> isSidePaneOpen = ValueNotifier(true);
   final ValueNotifier<SplitOrientation> splitOrientation =
       ValueNotifier(SplitOrientation.side);
+
+  /// Controls the inspector UI's theme. Defaults to [ThemeMode.system] which
+  /// automatically follows the host application's theme.
+  final ValueNotifier<ThemeMode> themeMode = ValueNotifier(ThemeMode.system);
   static const int maxRequests = 200;
 
   void toggleSplitOrientation() {
