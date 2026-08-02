@@ -1,38 +1,55 @@
 import '../../models/network_request.dart';
+import '../../models/split_orientation.dart';
 import '../../core/contracts/inspector_controller_contract.dart';
 import '../../dio_network_inspector.dart';
 
 class WindowContentStateData {
   final NetworkRequest? selectedRequest;
   final double? leftPaneWidth;
+  final double? topPaneHeight;
   final bool isNotesOpen;
   final bool isDatabaseOpen;
   final bool isSettingsOpen;
+  final bool isUrlTesterOpen;
+  final bool isSidePaneOpen;
+  final SplitOrientation splitOrientation;
 
   WindowContentStateData({
     this.selectedRequest,
     this.leftPaneWidth,
+    this.topPaneHeight,
     this.isNotesOpen = false,
     this.isDatabaseOpen = false,
     this.isSettingsOpen = false,
+    this.isUrlTesterOpen = false,
+    this.isSidePaneOpen = true,
+    this.splitOrientation = SplitOrientation.side,
   });
 
   WindowContentStateData copyWith({
     NetworkRequest? selectedRequest,
     bool clearSelectedRequest = false,
     double? leftPaneWidth,
+    double? topPaneHeight,
     bool? isNotesOpen,
     bool? isDatabaseOpen,
     bool? isSettingsOpen,
+    bool? isUrlTesterOpen,
+    bool? isSidePaneOpen,
+    SplitOrientation? splitOrientation,
   }) {
     return WindowContentStateData(
       selectedRequest: clearSelectedRequest
           ? null
           : (selectedRequest ?? this.selectedRequest),
       leftPaneWidth: leftPaneWidth ?? this.leftPaneWidth,
+      topPaneHeight: topPaneHeight ?? this.topPaneHeight,
       isNotesOpen: isNotesOpen ?? this.isNotesOpen,
       isDatabaseOpen: isDatabaseOpen ?? this.isDatabaseOpen,
       isSettingsOpen: isSettingsOpen ?? this.isSettingsOpen,
+      isUrlTesterOpen: isUrlTesterOpen ?? this.isUrlTesterOpen,
+      isSidePaneOpen: isSidePaneOpen ?? this.isSidePaneOpen,
+      splitOrientation: splitOrientation ?? this.splitOrientation,
     );
   }
 }
@@ -47,6 +64,13 @@ class WindowContentController
     DioNetworkInspector.instance.isNotesOpen.addListener(_onNotesChanged);
     DioNetworkInspector.instance.isDatabaseOpen.addListener(_onDatabaseChanged);
     DioNetworkInspector.instance.isSettingsOpen.addListener(_onSettingsChanged);
+    DioNetworkInspector.instance.isUrlTesterOpen.addListener(
+      _onUrlTesterChanged,
+    );
+    DioNetworkInspector.instance.isSidePaneOpen.addListener(_onSidePaneChanged);
+    DioNetworkInspector.instance.splitOrientation.addListener(
+      _onSplitOrientationChanged,
+    );
   }
 
   @override
@@ -59,12 +83,51 @@ class WindowContentController
     DioNetworkInspector.instance.isSettingsOpen.removeListener(
       _onSettingsChanged,
     );
+    DioNetworkInspector.instance.isUrlTesterOpen.removeListener(
+      _onUrlTesterChanged,
+    );
+    DioNetworkInspector.instance.isSidePaneOpen.removeListener(
+      _onSidePaneChanged,
+    );
+    DioNetworkInspector.instance.splitOrientation.removeListener(
+      _onSplitOrientationChanged,
+    );
     super.disposeController();
   }
 
-  void _onNotesChanged() => value = value.copyWith(
-    isNotesOpen: DioNetworkInspector.instance.isNotesOpen.value,
-  );
+  void _onNotesChanged() {
+    if (DioNetworkInspector.instance.isNotesOpen.value) {
+      DioNetworkInspector.instance.isUrlTesterOpen.value = false;
+      DioNetworkInspector.instance.isDatabaseOpen.value = false;
+      DioNetworkInspector.instance.isSettingsOpen.value = false;
+    }
+    value = value.copyWith(
+      isNotesOpen: DioNetworkInspector.instance.isNotesOpen.value,
+    );
+  }
+
+  void _onUrlTesterChanged() {
+    if (DioNetworkInspector.instance.isUrlTesterOpen.value) {
+      DioNetworkInspector.instance.isNotesOpen.value = false;
+      DioNetworkInspector.instance.isDatabaseOpen.value = false;
+      DioNetworkInspector.instance.isSettingsOpen.value = false;
+    }
+    value = value.copyWith(
+      isUrlTesterOpen: DioNetworkInspector.instance.isUrlTesterOpen.value,
+    );
+  }
+
+  void _onSidePaneChanged() {
+    value = value.copyWith(
+      isSidePaneOpen: DioNetworkInspector.instance.isSidePaneOpen.value,
+    );
+  }
+
+  void _onSplitOrientationChanged() {
+    value = value.copyWith(
+      splitOrientation: DioNetworkInspector.instance.splitOrientation.value,
+    );
+  }
 
   void _onDatabaseChanged() => value = value.copyWith(
     isDatabaseOpen: DioNetworkInspector.instance.isDatabaseOpen.value,
@@ -85,6 +148,7 @@ class WindowContentController
     DioNetworkInspector.instance.isNotesOpen.value = false;
     DioNetworkInspector.instance.isDatabaseOpen.value = false;
     DioNetworkInspector.instance.isSettingsOpen.value = false;
+    DioNetworkInspector.instance.isUrlTesterOpen.value = false;
     value = value.copyWith(
       selectedRequest: req,
       clearSelectedRequest: req == null,
@@ -94,6 +158,7 @@ class WindowContentController
   void setNotesOpen(bool open) {
     DioNetworkInspector.instance.isNotesOpen.value = open;
     if (open) {
+      DioNetworkInspector.instance.isUrlTesterOpen.value = false;
       DioNetworkInspector.instance.isDatabaseOpen.value = false;
       DioNetworkInspector.instance.isSettingsOpen.value = false;
     }
@@ -102,13 +167,17 @@ class WindowContentController
   void setDatabaseOpen(bool open) {
     DioNetworkInspector.instance.isNotesOpen.value = false;
     DioNetworkInspector.instance.isDatabaseOpen.value = open;
-    if (open) DioNetworkInspector.instance.isSettingsOpen.value = false;
+    if (open) {
+      DioNetworkInspector.instance.isUrlTesterOpen.value = false;
+      DioNetworkInspector.instance.isSettingsOpen.value = false;
+    }
   }
 
   void setSettingsOpen(bool open) {
     DioNetworkInspector.instance.isSettingsOpen.value = open;
     if (open) {
       DioNetworkInspector.instance.isNotesOpen.value = false;
+      DioNetworkInspector.instance.isUrlTesterOpen.value = false;
       DioNetworkInspector.instance.isDatabaseOpen.value = false;
     }
   }
@@ -125,5 +194,19 @@ class WindowContentController
 
   void setInitialLeftPaneWidth(double width) {
     value = value.copyWith(leftPaneWidth: width);
+  }
+
+  void updateTopPaneHeight(double dy, double maxHeight) {
+    if (value.topPaneHeight != null) {
+      double newHeight = (value.topPaneHeight! + dy).clamp(
+        100.0,
+        maxHeight - 100.0,
+      );
+      value = value.copyWith(topPaneHeight: newHeight);
+    }
+  }
+
+  void setInitialTopPaneHeight(double height) {
+    value = value.copyWith(topPaneHeight: height);
   }
 }

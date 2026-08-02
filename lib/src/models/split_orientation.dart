@@ -1,0 +1,4 @@
+enum SplitOrientation {
+  side,
+  bottom,
+}

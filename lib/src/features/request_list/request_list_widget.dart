@@ -266,7 +266,7 @@ class _InspectorRequestListWidgetState
                       child: const Icon(
                         Icons.delete_outline,
                         size: InspectorDimensions.iconM,
-                        color: InspectorColors.textBlueGrey,
+                        color: Colors.red,
                       ),
                     ),
                   ),

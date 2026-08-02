@@ -47,6 +47,13 @@ class _DioInspectorOverlayState extends State<DioInspectorOverlay> {
     _controller.toggleOpen(!_controller.value.isOpen);
   }
 
+  void _toggleSidePaneFromShortcut() {
+    if (_controller.value.isOpen) {
+      final inspector = DioNetworkInspector.instance;
+      inspector.isSidePaneOpen.value = !inspector.isSidePaneOpen.value;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -77,6 +84,25 @@ class _DioInspectorOverlayState extends State<DioInspectorOverlay> {
         children: [
           Row(
             children: [
+              ValueListenableBuilder<bool>(
+                valueListenable: DioNetworkInspector.instance.isSidePaneOpen,
+                builder: (context, isOpen, _) => Tooltip(
+                  message: 'Toggle Sidebar (⌘/Ctrl+B)',
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(InspectorDimensions.radiusM),
+                    onTap: () => DioNetworkInspector.instance.isSidePaneOpen.value = !isOpen,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: Icon(
+                        isOpen ? Icons.menu_open : Icons.menu,
+                        color: InspectorColors.textPrimary,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: InspectorDimensions.spacingS),
               const BaseText(
                 'Network Inspector',
                 style: InspectorTypography.title,
@@ -132,6 +158,19 @@ class _DioInspectorOverlayState extends State<DioInspectorOverlay> {
           ),
           Row(
             children: [
+              ValueListenableBuilder<bool>(
+                valueListenable: DioNetworkInspector.instance.isUrlTesterOpen,
+                builder: (context, isOpen, _) => BaseIconButton(
+                  icon: Icons.language,
+                  color: isOpen
+                      ? InspectorColors.primary
+                      : InspectorColors.textSecondary,
+                  size: InspectorDimensions.iconM,
+                  tooltip: 'URL Tester',
+                  onPressed: () =>
+                      DioNetworkInspector.instance.isUrlTesterOpen.value = !isOpen,
+                ),
+              ),
               ValueListenableBuilder<bool>(
                 valueListenable: DioNetworkInspector.instance.isNotesOpen,
                 builder: (context, isOpen, _) => BaseIconButton(
@@ -251,6 +290,10 @@ class _DioInspectorOverlayState extends State<DioInspectorOverlay> {
             _clearLogsFromShortcut,
         LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.keyK):
             _clearLogsFromShortcut,
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyB):
+            _toggleSidePaneFromShortcut,
+        LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.keyB):
+            _toggleSidePaneFromShortcut,
         LogicalKeySet(LogicalKeyboardKey.f12): _toggleWindowFromShortcut,
       },
       child: Focus(

@@ -3,6 +3,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../models/network_request.dart';
+import '../../models/split_orientation.dart';
+import '../../dio_network_inspector.dart';
 import 'detail_pane_controller.dart';
 import '../json_viewer/json_viewer_widget.dart';
 import '../request_list/request_list_controller.dart';
@@ -259,6 +261,8 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
                   style: _summaryButtonStyle,
                   child: const Text('Replay'),
                 ),
+                const SizedBox(width: InspectorDimensions.spacingXs),
+                _buildActionMenu(request),
               ],
             ],
           );
@@ -267,42 +271,74 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
     );
   }
 
-  Widget _buildActionMenu(NetworkRequest request) => PopupMenuButton<String>(
-    tooltip: 'More actions',
-    position: PopupMenuPosition.under,
-    offset: const Offset(0, 4),
-    constraints: const BoxConstraints(minWidth: 176),
-    color: InspectorColors.background,
-    elevation: 6,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(InspectorDimensions.radiusXl),
-    ),
-    onSelected: (value) {
-      if (value == 'json') {
-        _copyResponse();
-      }
-      if (value == 'curl') {
-        RequestListController().handleCopyCurl(context, request);
-      }
-      if (value == 'replay') {
-        _replayRequest();
-      }
-    },
-    itemBuilder: (context) => [
-      if (request.responseData != null)
-        const CustomPopupMenuItem(value: 'json', text: 'Copy JSON'),
-      const CustomPopupMenuItem(value: 'curl', text: 'Copy as cURL'),
-      const CustomPopupMenuItem(value: 'replay', text: 'Replay request'),
-    ],
-    child: const Padding(
-      padding: EdgeInsets.all(6),
-      child: Icon(
-        Icons.more_vert,
-        size: 20,
-        color: InspectorColors.textBlueGrey,
-      ),
-    ),
-  );
+  Widget _buildActionMenu(NetworkRequest request) =>
+      ValueListenableBuilder<SplitOrientation>(
+        valueListenable: DioNetworkInspector.instance.splitOrientation,
+        builder: (context, splitOrientation, _) {
+          final isSide = splitOrientation == SplitOrientation.side;
+          final splitText = isSide ? 'Split to bottom' : 'Split to side';
+          final splitIcon =
+              isSide ? Icons.horizontal_split : Icons.vertical_split;
+
+          return PopupMenuButton<String>(
+            tooltip: 'More actions',
+            position: PopupMenuPosition.under,
+            offset: const Offset(0, 4),
+            constraints: const BoxConstraints(minWidth: 176),
+            color: InspectorColors.background,
+            elevation: 6,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(InspectorDimensions.radiusXl),
+            ),
+            onSelected: (value) {
+              if (value == 'json') {
+                _copyResponse();
+              }
+              if (value == 'curl') {
+                RequestListController().handleCopyCurl(context, request);
+              }
+              if (value == 'replay') {
+                _replayRequest();
+              }
+              if (value == 'split_toggle') {
+                DioNetworkInspector.instance.toggleSplitOrientation();
+              }
+            },
+            itemBuilder: (context) => [
+              if (request.responseData != null)
+                const CustomPopupMenuItem(
+                  value: 'json',
+                  text: 'Copy JSON',
+                  icon: Icons.copy,
+                ),
+              const CustomPopupMenuItem(
+                value: 'curl',
+                text: 'Copy as cURL',
+                icon: Icons.code,
+              ),
+              const CustomPopupMenuItem(
+                value: 'replay',
+                text: 'Replay request',
+                icon: Icons.refresh,
+              ),
+              const PopupMenuDivider(height: 1),
+              CustomPopupMenuItem(
+                value: 'split_toggle',
+                text: splitText,
+                icon: splitIcon,
+              ),
+            ],
+            child: const Padding(
+              padding: EdgeInsets.all(6),
+              child: Icon(
+                Icons.more_vert,
+                size: 20,
+                color: InspectorColors.textBlueGrey,
+              ),
+            ),
+          );
+        },
+      );
 
   void _copyResponse() {
     final data = widget.request.responseDataForDisplay;
