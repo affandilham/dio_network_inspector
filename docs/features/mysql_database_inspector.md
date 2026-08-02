@@ -3,8 +3,8 @@
 ## Status
 
 **Implementasi awal tersedia.** Koneksi MySQL tetap opt-in dan tidak dibuat
-sampai user menekan **Connect**. Fitur editor lanjutan dan backlog tetap
-ditandai TODO sampai ada kode serta verifikasi yang sesuai.
+sampai user menekan **Connect**. Hanya backlog yang belum memiliki kode dan
+verifikasi yang sesuai yang ditandai TODO.
 
 ## Checklist implementasi
 
@@ -18,36 +18,108 @@ selesai.
   tulis, transaction, lock, dan file output.
 - [x] **Fondasi MySQL:** konfigurasi host, interface client, model data,
   dan implementasi koneksi lazy dengan SSL.
-- [ ] **TODO — Mode read-only lanjutan:** parameter binding untuk query
-  template dan parser penuh untuk statement kompleks.
-- [x] **Database panel:** status koneksi, daftar tabel, data tabel,
-  paging, refresh manual, dan disconnect.
-- [x] **Metadata ENUM:** nilai valid dibaca dari schema dan dapat digunakan
-  sebagai dropdown filter parameterized, termasuk opsi `NULL` bila diizinkan.
-- [ ] **TODO — Metadata kolom lanjutan:** tampilan tipe data dan JSON preview.
-- [x] **Autocomplete dasar:** keyword MySQL, tabel sesi aktif, serta kolom
-  metadata yang sudah dibuka, termasuk prefix alias `FROM`/`JOIN` sederhana.
-- [ ] **TODO — SQL editor lanjutan:** syntax highlighting, katalog kolom penuh,
-  parsing alias/CTE kompleks, dan Highlight Active Statement.
+- [x] **Database panel:** status koneksi, daftar tabel, pencarian tabel lokal
+  case-insensitive berbasis potongan nama (`dings` menemukan
+  `report_recordings`), data tabel, paging, refresh manual, dan disconnect.
+- [x] **Metadata ENUM:** nilai valid dibaca dari schema dan ditampilkan sebagai
+  dropdown inspeksi langsung pada cell, termasuk opsi `NULL` bila diizinkan.
+- [x] **Metadata kolom lanjutan:** tipe data tersedia saat hover header agar
+  tabel tetap ringkas; kolom foreign key diberi ikon kunci gold dan nilai
+  kolom MySQL `JSON` dapat dibuka sebagai preview terformat read-only.
+- [x] **Autocomplete dasar:** keyword MySQL, tabel sesi aktif, dan seluruh
+  metadata kolom schema yang dimuat sekali ketika koneksi dibuka. Kolom hanya
+  disarankan setelah tabel valid dipilih melalui `FROM` atau `JOIN`, tanpa
+  batas jumlah saran; daftar muncul sebagai popup yang dapat di-scroll dan
+  tidak mengurangi tinggi hasil query. Gunakan `↑`/`↓` untuk memindahkan pilihan,
+  `Enter` atau `Tab` untuk memasukkan suggestion, serta `Esc` untuk menutupnya.
+  `Shift` + `Enter` menambah baris baru tanpa memilih suggestion. `Ctrl` +
+  `Enter` menjalankan active statement yang valid dan tidak memilih suggestion.
+  Kolom tanpa alias dibatasi ke tabel utama setelah `FROM`; gunakan alias
+  eksplisit untuk tabel `JOIN`.
+- [x] **SQL editor lanjutan:** syntax highlighting, katalog kolom penuh,
+  serta autocomplete alias dan CTE pada statement aktif.
+  - [x] **Syntax highlighting read-only:** keyword SQL, string, angka,
+    komentar, dan quoted identifier diberi warna tanpa mengubah query atau
+    memengaruhi validasi/execution. Highlight active statement serta error line
+    tetap diprioritaskan sebagai background.
+  - [x] **Highlight Active Statement:** cursor menentukan satu statement yang
+    diberi highlight dan menjadi satu-satunya kandidat **Run**. Pemisah `;`
+    penutup ikut diberi highlight, sedangkan `;` di dalam string, quoted
+    identifier, atau komentar diabaikan. Caret tepat setelah `;` tetap
+    menggunakan statement sebelumnya; blank line setelahnya tidak aktif.
+  - [x] **Nomor baris dan lokasi error:** editor menampilkan gutter nomor
+    baris yang ikut bergulir bersama teks. Pesan MySQL berbentuk `at line N`
+    dihitung relatif terhadap statement aktif yang dikirim, lalu dipetakan ke
+    nomor serta isi baris editor yang benar secara merah. Lokasi tidak berubah
+    walaupun cursor dipindah setelah query dijalankan.
+  - [x] **Alias dan CTE:** autocomplete membaca alias `FROM`/`JOIN`, nama CTE,
+    kolom hasil `SELECT` CTE, dan daftar nama output CTE eksplisit. Saran hanya
+    memakai statement di posisi cursor agar alias dari query lain tidak bocor.
 - [x] **Query tabs dasar:** buat, pindah, dan tutup tab tanpa batas lisensi;
   draft serta satu halaman hasil per tab memakai satu koneksi bersama.
-- [ ] **TODO — Query tabs lanjutan:** ganti nama, restore lintas sesi,
-  konfirmasi draft sebelum menutup, dan eviction hasil tab tidak aktif.
-- [ ] **TODO — Hardening:** error aman, lifecycle koneksi, batas RAM, unit test,
-  dan integration test memakai MySQL lokal/ephemeral.
-- [ ] **TODO — Request-to-table mapping:** aksi Inspect related data dari request
-  Dio ke row/tabel terkait.
+- [x] **Query tabs lanjutan:**
+  - [x] Ganti nama tab melalui double-click pada tab.
+  - [x] **Restore lintas sesi:** hingga 20 nama tab, draft SQL, dan tab aktif
+    dipulihkan secara lokal per database/environment setelah Connect. Hasil
+    query, kredensial, dan koneksi tidak pernah dipulihkan.
+  - [x] Konfirmasi sebelum menutup tab yang memiliki draft SQL.
+  - [x] Opsi global **Release inactive query results** tersedia di Inspector
+    settings. Saat diaktifkan, hasil tab tidak aktif dilepas untuk menghemat
+    RAM; draft tetap tersimpan dan tab menampilkan penanda untuk menjalankan
+    ulang query. Secara default opsi ini nonaktif.
+- [x] **Hardening integration test:** suite MySQL hanya berjalan bila user
+  memasang `MYSQL_INSPECTOR_INTEGRATION=1` dan mengisi fixture lokal eksplisit.
+  Test menolak host selain `localhost`/`127.0.0.1`/`::1` serta environment
+  `production` sebelum membuka socket. Ia memverifikasi connect, baca metadata,
+  dan query `SELECT` read-only; database Voltunes production tidak pernah
+  dijadikan fixture otomatis.
 
 ### Backlog setelah versi 1
 
-- [ ] **TODO — Advanced filter presets** tanpa batas kondisi.
-- [ ] **TODO — Saved query dan keyword snippets.**
-- [ ] **TODO — Foreign-key navigation.**
-- [ ] **TODO — Cancel query dan execution timeout.**
-- [ ] **TODO — Query history lokal/privat.**
-- [ ] **TODO — Query parameters.**
-- [ ] **TODO — Export hasil aktif ke CSV/JSON.**
-- [ ] **TODO — `EXPLAIN` dan ringkasan query plan.**
+- [x] **Saved query lokal/privat:** hingga 50 query read-only bernama per
+  database/environment disimpan pada perangkat. Memilihnya mengikuti posisi
+  fokus dan tidak mengganti draft; SQL yang dimasukkan selalu memiliki penutup
+  statement `;` tanpa menggandakan delimiter yang sudah ada.
+  - [x] Folder opsional mengelompokkan query tersimpan secara lokal. Memilih
+    query tetap hanya memasukkan SQL ke tab aktif tanpa menjalankannya otomatis.
+- [x] **Foreign-key navigation:** kolom foreign key pada hasil browse tabel
+  dan query result memiliki aksi Inspect related data yang menyiapkan query
+  `SELECT` aman pada tab baru dan langsung menjalankannya. Pada result
+  `JOIN`, aksi hanya muncul bila nama kolom FK tidak ambigu. Schema tanpa
+  constraint FK juga didukung secara konservatif untuk kolom `*_id` jika hanya
+  ada satu kandidat tabel (`kandang_id` → `kandangs`). Beberapa source column
+  bernama sama tetap didukung bila semuanya menunjuk ke target yang sama.
+  - [x] Navigasi balik dari tabel referensi tersedia untuk satu relasi yang
+    tidak ambigu.
+  - [x] **Relasi komposit:** navigasi memakai seluruh pasangan kolom dalam
+    constraint foreign key yang sama, sehingga query target selalu memakai
+    predicate `AND` lengkap dan tidak dapat membuka row yang salah.
+- [x] **Structure read-only:** switch **Data / Structure** untuk tabel yang
+  sedang dibuka. Columns, Indexes, Triggers, dan DDL tersedia sebagai metadata
+  read-only; tidak ada aksi tambah/edit/hapus/simpan ke server. Trigger
+  ditampilkan sebagai accordion per tabel: nama, timing, event, serta deskripsi
+  singkat selalu terlihat; statement SQL hanya ditampilkan pada item yang
+  dibuka, diberi syntax highlighting, dan dapat disalin.
+- [x] **Cancel query dan execution timeout:** query dibatalkan atau melewati
+  timeout konfigurasi (default 30 detik) dengan menutup sesi MySQL aktif agar
+  operasi server berhenti. Inspector kembali disconnected dan user menekan
+  **Connect** untuk memulai sesi bersih; tidak ada koneksi setengah-terpakai.
+- [x] **Query history lokal/privat:** maksimal 50 query sukses per database
+  dan environment disimpan lokal, tidak masuk export session, dapat dipilih
+  ulang dari editor, serta dapat dihapus manual. Memilih history tidak pernah
+  mengganti draft: pada statement yang sedang aktif query ditambahkan di akhir;
+  pada whitespace antar-statement query disisipkan di posisi fokus. SQL yang
+  dimasukkan selalu ditutup dengan `;`.
+- [x] **Export hasil aktif ke CSV/JSON:** menu pada hasil database menyimpan
+  halaman hasil yang sudah dimuat ke file lokal melalui dialog simpan native.
+  CSV menyertakan BOM UTF-8 dan directive delimiter Excel agar setiap nilai
+  masuk ke cell kolom yang tepat pada locale macOS. Nilai cell dipertahankan
+  sebagai teks literal agar Excel tidak mengubah decimal atau ID dari database.
+  Export tidak menjalankan query tambahan, tidak menyertakan kredensial, dan
+  tidak ikut dalam export session Network Inspector.
+- [x] **`EXPLAIN` dan ringkasan query plan:** tombol **Explain** menjalankan
+  `EXPLAIN` hanya untuk active statement `SELECT`/`WITH`. Hasil menampilkan
+  estimasi row dan memberi peringatan bila MySQL melaporkan full table scan.
 
 ## Tujuan
 
@@ -71,17 +143,18 @@ proses desktop tambahan.
 3. Daftar tabel dari satu database yang telah dikonfigurasi.
 4. Tampilan data tabel dengan pagination (default 50 row) dan pemuatan halaman
    berikutnya berdasarkan permintaan user.
-5. Filter sederhana berdasarkan kolom yang dipilih.
-6. Kolom MySQL `ENUM` dikenali dan nilai yang diizinkan ditampilkan sebagai
-   dropdown filter, seperti pilihan enum pada TablePlus.
+5. Kolom MySQL `ENUM` dikenali dan nilai yang diizinkan ditampilkan sebagai
+   dropdown pada cell, seperti pilihan enum pada TablePlus.
 7. Penampil nilai panjang dan JSON.
 8. SQL read-only untuk query `SELECT`/`SHOW`/`DESCRIBE`, dengan batas row.
 9. Editor SQL dengan autocomplete keyword MySQL dan nama schema yang tersedia.
 10. **Highlight Active Statement**: query tempat cursor berada diberi blok
     highlight, dengan statement dipisahkan oleh tanda `;`.
-11. Banyak query tab tanpa batas lisensi: buat, pindah, ganti nama, dan tutup
+11. Nomor baris editor dan penanda baris error yang merujuk ke `at line N`
+    dari respons MySQL.
+12. Banyak query tab tanpa batas lisensi: buat, pindah, ganti nama, dan tutup
     tab query secara independen.
-12. Tombol refresh manual dan tombol disconnect.
+13. Tombol refresh manual dan tombol disconnect.
 
 ## Di luar ruang lingkup versi 1
 
@@ -173,9 +246,6 @@ Voltunes host app
                  ├─ data tabel / filter / pagination
                  └─ SQL read-only
 
-DioNetworkInspector
-  └─ NetworkRequest terpilih
-       └─ optional RequestDatabaseLink → filter tabel yang terkait
 ```
 
 `MySqlDatabaseClient` dibungkus oleh interface agar UI dan test tidak bergantung
@@ -196,7 +266,8 @@ saat overlay dibuka dan tidak ada query berjalan di background.
 
 ### Metadata enum
 
-Saat tabel dibuka, client mengambil metadata kolom dari `INFORMATION_SCHEMA`.
+Saat koneksi dibuka, client mengambil metadata seluruh kolom schema dari
+`INFORMATION_SCHEMA` dalam satu query.
 Untuk kolom bertipe MySQL `ENUM`, client mengurai daftar nilai yang valid dari
 metadata tipe dan mengembalikannya sebagai bagian dari `DatabaseColumn`.
 
@@ -216,12 +287,12 @@ class DatabaseColumn {
 }
 ```
 
-UI memakai `enumValues` untuk membuat dropdown filter. Pilihan terdiri dari
-semua nilai enum yang valid, ditambah **NULL** bila kolom nullable. **DEFAULT**
-tidak muncul dalam mode read-only karena ia hanya bermakna saat menulis row.
-Nilai enum tidak boleh dibangun menjadi SQL secara langsung; filter selalu
-memakai parameter binding. Penguraian metadata harus diuji untuk nilai enum
-yang mengandung koma atau apostrof.
+Saat koneksi dibuka, metadata seluruh kolom pada schema diambil dengan satu
+query `INFORMATION_SCHEMA` dan disimpan untuk sesi aktif. UI memakai
+`enumValues` untuk membuat dropdown langsung pada cell. Pilihan terdiri dari
+semua nilai enum yang valid, ditambah **NULL** bila kolom nullable. Memilih
+nilai hanya memberi pemberitahuan read-only; database tidak diubah. Penguraian
+metadata harus diuji untuk nilai enum yang mengandung koma atau apostrof.
 
 ### Editor SQL dan kebijakan eksekusi
 
@@ -261,8 +332,10 @@ dalam string (`'text; value'`), quoted identifier, atau komentar SQL agar blok
 aktif tidak salah. Jika cursor berada di whitespace di antara dua statement,
 tidak ada statement aktif dan **Run** nonaktif.
 
-Autocomplete memakai katalog keyword MySQL statis terlebih dahulu, kemudian
-menambahkan nama tabel dan kolom dari metadata database yang sedang terhubung.
+Autocomplete mengambil keyword MySQL dari `INFORMATION_SCHEMA.KEYWORDS` sekali
+saat koneksi dibuka, kemudian menambahkan nama tabel dan kolom dari metadata
+database yang sedang terhubung. Bila view keyword tidak tersedia, katalog
+keyword bawaan dipakai sebagai fallback.
 Contohnya, ketika user mengetik `use`, pilihan `users`, `user_roles`, dan tabel
 lain yang cocok muncul bersama keyword `USER`/`USE`, dengan label nama database
 di sebelahnya. Nama tabel diprioritaskan setelah konteks `FROM`, `JOIN`,
@@ -293,8 +366,9 @@ memberi keyword dan nama tabel umum, atau meminta metadata hasil query pada
 tahap lanjutan.
 
 Tidak perlu scraping dari internet atau menjalankan query tambahan untuk setiap
-karakter yang diketik. Metadata tabel diambil sekali ketika koneksi dibuka,
-disimpan hanya untuk sesi aktif, lalu digunakan untuk autocomplete. Keyword
+karakter yang diketik. Metadata tabel, kolom, dan keyword diambil sekali ketika
+koneksi dibuka, disimpan hanya untuk sesi aktif, lalu digunakan untuk
+autocomplete. Keyword
 tulis seperti `INSERT` atau `UPDATE` tetap dapat muncul sebagai saran, namun
 tidak pernah membuat query dapat dieksekusi.
 
@@ -332,42 +406,26 @@ perlakukan sebagai tidak aman dan nonaktifkan **Run**.
 ## Batas performa dan RAM
 
 - Satu koneksi aktif maksimum.
-- Putuskan koneksi ketika panel Database ditutup atau setelah idle timeout.
-- Ambil metadata tabel sekali per sesi; jangan mengambil ukuran tabel atau isi
-  semua tabel otomatis.
+- Putuskan koneksi ketika panel Database ditutup atau setelah idle timeout
+  opsional dari Inspector settings. Fitur ini nonaktif secara default; saat
+  diaktifkan, interval dapat dipilih (1, 5, 15, atau 30 menit). Aktivitas
+  editor, browse tabel, query, klik/tap, dan scroll di panel Database
+  mengulang timer idle.
+- Ambil daftar tabel dan metadata kolom schema sekali per sesi; jangan
+  mengambil ukuran tabel atau isi semua tabel otomatis.
 - Pagination menggunakan `LIMIT` dan offset/cursor yang sesuai kemampuan MySQL.
 - Batas hasil query 100 row; ukuran page default 50.
 - Jangan memasukkan hasil database ke `DioNetworkInspector.exportSession()`.
 - Jangan menduplikasi string/blob besar untuk preview; tampilkan preview terbatas
   dan buka nilai penuh hanya atas aksi user.
 
-## Integrasi dengan request Dio (tahap lanjutan)
-
-Hubungan request dan tabel tidak dapat ditebak secara aman. Aplikasi host
-mendaftarkan mapping secara eksplisit, misalnya response endpoint user memiliki
-`id` yang harus dipakai untuk memfilter tabel `users`.
-
-```dart
-RequestDatabaseLink(
-  method: 'GET',
-  pathPattern: r'/users/:id',
-  table: 'users',
-  column: 'id',
-  valueFrom: RequestValueSource.pathParameter('id'),
-)
-```
-
-UI kemudian menampilkan aksi **Inspect related data** pada request yang cocok.
-Tidak ada SQL yang dibangun dari input request tanpa parameter binding dan
-validasi nama tabel/kolom.
-
 ## Tahapan implementasi
 
 1. Tambahkan kontrak konfigurasi, interface client, dan model tabel/query.
 2. Tambahkan driver MySQL serta implementasi koneksi dengan SSL sesuai config.
-3. Buat query validator read-only, parameter binding, dan pembatas `LIMIT`.
-4. Tambahkan metadata kolom, termasuk `ENUM`, dan dropdown filter yang memakai
-   parameter binding.
+3. Buat query validator read-only dan pembatas `LIMIT`.
+4. Tambahkan metadata kolom seluruh schema, termasuk `ENUM`, dan dropdown
+   inspeksi langsung pada cell.
 5. Tambahkan editor SQL dengan parsing statement aktif, highlight berdasarkan
    posisi cursor, autocomplete keyword/schema, tabel, kolom, dan alias
    `FROM`/`JOIN`, serta alasan status tombol Run yang dapat diakses user.
@@ -376,65 +434,77 @@ validasi nama tabel/kolom.
 7. Buat controller dan Database panel: connect, disconnect, tabel, dan paging.
 8. Tambahkan filter, SQL read-only, serta state error yang tidak membocorkan
    password/connection string.
-9. Tambahkan request-to-table mapping sebagai fitur terpisah setelah panel dasar
-   stabil.
-10. Buat example app lokal dengan konfigurasi placeholder; jangan pernah memakai
+9. Buat example app lokal dengan konfigurasi placeholder; jangan pernah memakai
    database production sebagai fixture test otomatis.
 
 ## Backlog fitur lanjutan
 
-Fitur berikut terinspirasi dari alur kerja database client desktop, tetapi
-dirancang untuk inspector yang ringan dan read-only. Semua item di bawah adalah
-backlog; tidak termasuk implementasi versi 1.
+Fitur berikut terinspirasi dari alur kerja database client desktop dan tetap
+dirancang untuk inspector yang ringan serta read-only. Item yang dicentang
+sudah tersedia; sisanya adalah backlog.
 
 ### Prioritas tinggi
 
-1. **Advanced filter tanpa batas dan filter presets**
-   - User dapat menambah lebih dari dua kondisi filter, menggabungkan `AND`/`OR`,
-     lalu menyimpan filter sebagai preset lokal per tabel.
-   - Filter dibangun memakai parameter binding dan tetap menghasilkan `SELECT`
-     yang dibatasi `LIMIT`.
+1. **Folder dan keyword snippets untuk saved query**
+   - Query read-only bernama sudah tersedia secara lokal per
+     database/environment, tanpa kredensial atau hasil query di file storage.
+   - [x] Folder lokal serta penyisipan SQL ke tab aktif tanpa menjalankan query
+     secara otomatis.
 
-2. **Saved query dan keyword snippets**
-   - User dapat menyimpan query read-only dengan nama, folder, dan keyword.
-   - Mengetik keyword lalu memilih snippet memasukkan SQL ke tab aktif; tidak
-     menjalankan query secara otomatis.
-   - Simpan lokal dan jangan menaruh credential, hasil query, atau nilai sensitif
-     ke file favorite.
+2. **Foreign-key navigation / Inspect related data**
+   - [x] Metadata foreign key menampilkan aksi pada kolom relasi, termasuk
+     query result bila relasi dapat ditentukan tanpa ambigu. Aksi membuat query
+     `SELECT` read-only yang sudah escaped pada tab baru lalu menjalankannya
+     otomatis.
+   - [x] Navigasi balik dari tabel referensi untuk satu relasi yang tidak
+     ambigu.
+  - [x] Relasi komposit memakai seluruh pasangan kolom constraint yang sama.
 
-3. **Foreign-key navigation / Inspect related data**
-   - Metadata foreign key menampilkan aksi pada kolom relasi, misalnya `user_id`
-     membuka row yang sesuai pada tabel `users`.
-   - Aksi ini membuka filter/query read-only di tab baru dan memakai parameter
-     binding.
+3. **Cancel query dan execution timeout**
+   - [x] Setiap query memiliki timeout yang dapat dikonfigurasi secara lokal
+     (default 30 detik).
+   - [x] User dapat membatalkan query read-only yang berjalan. Sesi MySQL aktif
+     ditutup untuk memastikan operasi server berhenti, lalu inspector kembali
+     disconnected agar user dapat membuat sesi bersih lewat **Connect**.
 
-4. **Cancel query dan execution timeout**
-   - Setiap query memiliki timeout yang dapat dikonfigurasi secara lokal.
-   - User dapat membatalkan query read-only yang berjalan; cancellation tidak
-     boleh menutup seluruh inspector atau mengganggu tab lain.
+4. **Structure read-only (inspirasi TablePlus)**
+   - [x] Saat user membuka tabel, switch **Data / Structure** menyediakan
+     metadata columns tanpa memuat row tambahan.
+   - [x] **Columns:** urutan, nama, data type, nullable, serta penanda PK/FK
+     dan target relasi dari metadata sesi aktif.
+   - [x] **Indexes:** nama, unique/non-unique, type, dan urutan kolom dibaca
+     dari `INFORMATION_SCHEMA.STATISTICS` saat tabel dibuka.
+   - [x] **Foreign keys:** aturan `ON UPDATE`/`ON DELETE` ditampilkan bila
+     tersedia dari metadata `INFORMATION_SCHEMA`.
+   - [x] **Triggers:** nama, timing, event, dan statement read-only tersedia
+     dalam accordion dengan syntax highlighting serta tombol salin.
+   - [x] **DDL:** `SHOW CREATE TABLE` dengan syntax highlighting dan ikon copy
+     di dalam panel DDL. Tidak ada eksekusi DDL, import, perubahan schema,
+     atau tombol Save.
+   - Referensi UX: dokumentasi resmi TablePlus untuk
+     [Table Structure](https://docs.tableplus.com/gui-tools/working-with-table/table),
+     [Index](https://docs.tableplus.com/gui-tools/working-with-table/index),
+     dan [Trigger](https://docs.tableplus.com/gui-tools/working-with-table/trigger).
 
 ### Prioritas sedang
 
 5. **Query history lokal yang dapat dihapus**
-   - Menyimpan daftar query yang benar-benar dijalankan, waktu, dan statusnya
-     secara lokal agar dapat dibuka kembali di tab baru.
-   - Sediakan clear per item dan clear all. History dinonaktifkan secara default
-     untuk koneksi berlabel `production` atau bila user memilih mode privat.
+   - [x] Menyimpan maksimal 50 query sukses per database/environment secara
+     lokal dan dapat dibuka kembali tanpa mengganti draft aktif.
+   - [x] Sediakan clear per item dan clear all.
+   - [x] History nonaktif secara default untuk koneksi `production`; user dapat
+     mengaktifkannya secara eksplisit dari Inspector settings.
 
-6. **Query parameters**
-   - Template dapat mendefinisikan parameter, misalnya `WHERE id = :id`.
-   - Sebelum Run, UI meminta nilai parameter dan mengirimnya melalui parameter
-     binding, bukan interpolasi string.
+6. **Export hasil aktif**
+   - [x] Export hanya hasil query/page yang sedang terlihat ke CSV atau JSON.
+   - [x] Tidak ada import, SQL dump, atau export seluruh database pada tahap
+     ini. User memilih lokasi file secara eksplisit; tidak ada export otomatis.
 
-7. **Export hasil aktif**
-   - Export hanya hasil query/page yang sedang terlihat ke CSV atau JSON.
-   - Tidak ada import, SQL dump, atau export seluruh database pada tahap ini.
-   - User memilih lokasi file secara eksplisit; tidak ada export otomatis.
-
-8. **`EXPLAIN` dan ringkasan query plan**
-   - Menjalankan `EXPLAIN` pada query read-only dan menampilkan tabel, index,
-     estimasi row, serta peringatan full table scan.
-   - Visual graph/diagram plan ditunda sampai implementasi dasar stabil.
+7. **`EXPLAIN` dan ringkasan query plan**
+   - [x] Menjalankan `EXPLAIN` pada query read-only dan menampilkan tabel,
+     index, estimasi row, serta peringatan full table scan.
+   - [ ] **TODO — Visual graph/diagram plan** ditunda sampai implementasi dasar
+     stabil.
 
 ### Ditunda atau tidak diprioritaskan
 
@@ -451,9 +521,9 @@ backlog; tidak termasuk implementasi versi 1.
 - Saat tab Database tidak dibuka, tidak ada koneksi MySQL maupun polling.
 - User dapat connect dan disconnect secara manual dengan konfigurasi valid.
 - User dapat melihat daftar tabel dan membuka data satu tabel per halaman.
-- Kolom `ENUM` menampilkan dropdown filter yang hanya berisi nilai yang valid
-  dan `NULL` bila diizinkan.
-- Filter dan SQL hanya menjalankan operasi read-only dengan batas hasil.
+- Kolom `ENUM` menampilkan dropdown pada cell yang hanya berisi nilai valid
+  dan `NULL` bila diizinkan; pilihan tidak mengubah database.
+- SQL hanya menjalankan operasi read-only dengan batas hasil.
 - Autocomplete boleh menampilkan keyword MySQL lengkap, tetapi **Run** hanya
   aktif untuk satu query yang telah tervalidasi read-only.
 - Cursor di dalam statement yang dibatasi `;` memberi highlight pada statement
@@ -474,4 +544,3 @@ backlog; tidak termasuk implementasi versi 1.
 1. Environment mana yang boleh diakses: development, staging, atau production.
 2. Apakah koneksi mengharuskan SSL `PREFERRED` atau `REQUIRED`.
 3. Nama akun MySQL read-only khusus inspector dan host yang diizinkan.
-4. Tabel/endpoint pertama yang akan mendapat mapping **Inspect related data**.
