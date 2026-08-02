@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/theme/inspector_colors.dart';
 import '../core/theme/inspector_typography.dart';
 
 class BaseText extends StatelessWidget {
@@ -21,12 +22,15 @@ class BaseText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = InspectorColors.of(context);
     TextStyle baseStyle = isMono ? InspectorTypography.mono : InspectorTypography.body;
-    
-    if (color != null) {
-      baseStyle = baseStyle.copyWith(color: color);
+
+    // Resolve effective color: explicit prop > theme-aware default.
+    final effectiveColor = color ?? (isMono ? null : colors.textPrimary);
+    if (effectiveColor != null) {
+      baseStyle = baseStyle.copyWith(color: effectiveColor);
     }
-    
+
     if (style != null) {
       baseStyle = baseStyle.merge(style);
     }

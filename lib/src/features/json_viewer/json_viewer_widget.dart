@@ -53,9 +53,10 @@ class _JsonViewerWidgetState extends State<JsonViewerWidget> {
     return ValueListenableBuilder<JsonViewerStateData>(
       valueListenable: _controller,
       builder: (context, state, child) {
+        final colors = InspectorColors.of(context);
         final content = Container(
           width: double.infinity,
-          color: InspectorColors.background,
+          color: colors.background,
           padding: const EdgeInsets.all(InspectorDimensions.spacingM),
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,

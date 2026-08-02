@@ -15,11 +15,16 @@ import '../../dio_network_inspector.dart';
 class DioInspectorOverlay extends StatefulWidget {
   final Widget child;
   final GlobalKey<NavigatorState>? navigatorKey;
+  /// Optional theme override for the inspector panel.
+  /// When null, the inspector follows [DioNetworkInspector.instance.themeMode],
+  /// which defaults to [ThemeMode.system] (auto-follows the host app).
+  final ThemeMode? themeMode;
 
   const DioInspectorOverlay({
     super.key,
     required this.child,
     this.navigatorKey,
+    this.themeMode,
   });
 
   @override
@@ -65,11 +70,12 @@ class _DioInspectorOverlayState extends State<DioInspectorOverlay> {
     super.dispose();
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
+    final colors = InspectorColors.of(context);
     return BaseContainer(
-      color: InspectorColors.background,
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: InspectorColors.divider)),
+      color: colors.background,
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: colors.divider)),
       ),
       height: 48,
       padding: const EdgeInsets.symmetric(
@@ -91,7 +97,7 @@ class _DioInspectorOverlayState extends State<DioInspectorOverlay> {
                       padding: const EdgeInsets.all(4.0),
                       child: Icon(
                         isOpen ? Icons.menu_open : Icons.menu,
-                        color: InspectorColors.textPrimary,
+                        color: colors.textPrimary,
                         size: 20,
                       ),
                     ),
@@ -104,7 +110,7 @@ class _DioInspectorOverlayState extends State<DioInspectorOverlay> {
                 style: InspectorTypography.title,
               ),
               const SizedBox(width: InspectorDimensions.spacingM),
-              Container(width: 1, height: 16, color: InspectorColors.divider),
+              Container(width: 1, height: 16, color: colors.divider),
               const SizedBox(width: InspectorDimensions.spacingM),
               ValueListenableBuilder<bool>(
                 valueListenable: DioNetworkInspector.instance.isRecording,
@@ -130,8 +136,8 @@ class _DioInspectorOverlayState extends State<DioInspectorOverlay> {
                             height: 7,
                             decoration: BoxDecoration(
                               color: isRecording
-                                  ? InspectorColors.error
-                                  : InspectorColors.textSecondary,
+                                  ? colors.error
+                                  : colors.textSecondary,
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -142,7 +148,7 @@ class _DioInspectorOverlayState extends State<DioInspectorOverlay> {
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
                             ),
-                            color: InspectorColors.textSecondary,
+                            color: colors.textSecondary,
                           ),
                         ],
                       ),
@@ -159,8 +165,8 @@ class _DioInspectorOverlayState extends State<DioInspectorOverlay> {
                 builder: (context, isOpen, _) => BaseIconButton(
                   icon: Icons.language,
                   color: isOpen
-                      ? InspectorColors.primary
-                      : InspectorColors.textSecondary,
+                      ? colors.primary
+                      : colors.textSecondary,
                   size: InspectorDimensions.iconM,
                   tooltip: 'URL Tester',
                   onPressed: () =>
@@ -172,8 +178,8 @@ class _DioInspectorOverlayState extends State<DioInspectorOverlay> {
                 builder: (context, isOpen, _) => BaseIconButton(
                   icon: Icons.sticky_note_2_outlined,
                   color: isOpen
-                      ? InspectorColors.primary
-                      : InspectorColors.textSecondary,
+                      ? colors.primary
+                      : colors.textSecondary,
                   size: InspectorDimensions.iconM,
                   tooltip: 'Notes',
                   onPressed: () =>
@@ -182,14 +188,14 @@ class _DioInspectorOverlayState extends State<DioInspectorOverlay> {
               ),
               BaseIconButton(
                 icon: Icons.file_upload_outlined,
-                color: InspectorColors.textSecondary,
+                color: colors.textSecondary,
                 size: InspectorDimensions.iconM,
                 tooltip: 'Import session from clipboard',
                 onPressed: _importSession,
               ),
               BaseIconButton(
                 icon: Icons.file_download_outlined,
-                color: InspectorColors.textSecondary,
+                color: colors.textSecondary,
                 size: InspectorDimensions.iconM,
                 tooltip: 'Export session to clipboard',
                 onPressed: _exportSession,
@@ -197,7 +203,7 @@ class _DioInspectorOverlayState extends State<DioInspectorOverlay> {
               const SizedBox(width: InspectorDimensions.spacingS),
               BaseIconButton(
                 icon: Icons.close,
-                color: InspectorColors.textBlueGrey,
+                color: colors.textBlueGrey,
                 size: InspectorDimensions.iconL,
                 tooltip: 'Close inspector (Fn+F12)',
                 onPressed: () => _controller.toggleOpen(false),
@@ -336,11 +342,12 @@ class _DioInspectorOverlayState extends State<DioInspectorOverlay> {
                         ResizableWindow(
                           initialRect: state.windowRect!,
                           onRectChanged: _controller.setWindowRect,
-                          header: _buildHeader(),
+                          header: _buildHeader(context),
                           body: InspectorWindowContentWidget(
                             controller: _windowContentController,
                           ),
                           onClose: () => _controller.toggleOpen(false),
+                          themeMode: widget.themeMode,
                         ),
                     ],
                   ),

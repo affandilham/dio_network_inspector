@@ -11,18 +11,20 @@ class SectionTitle extends StatelessWidget {
   const SectionTitle(
     this.title, {
     super.key,
-    this.color = InspectorColors.textPrimary,
+    this.color,
     this.padding = const EdgeInsets.symmetric(vertical: 8.0),
   });
 
   @override
   Widget build(BuildContext context) {
+    // Use explicit color if provided, else resolve from current theme.
+    final effectiveColor = color ?? InspectorColors.of(context).textPrimary;
     return Padding(
       padding: padding ?? EdgeInsets.zero,
       child: BaseText(
         title,
         style: InspectorTypography.sectionTitle,
-        color: color,
+        color: effectiveColor,
       ),
     );
   }

@@ -19,11 +19,11 @@ class NotesAlertPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = switch (type) {
-      'TIP' => InspectorColors.success,
+      'TIP' => InspectorColors.of(context).success,
       'IMPORTANT' => Colors.purple,
-      'WARNING' => InspectorColors.warning,
-      'CAUTION' => InspectorColors.error,
-      _ => InspectorColors.primary,
+      'WARNING' => InspectorColors.of(context).warning,
+      'CAUTION' => InspectorColors.of(context).error,
+      _ => InspectorColors.of(context).primary,
     };
     return Container(
       decoration: BoxDecoration(
@@ -110,8 +110,8 @@ class NotesDetailsPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: InspectorColors.background,
-        border: Border.all(color: InspectorColors.divider),
+        color: InspectorColors.of(context).background,
+        border: Border.all(color: InspectorColors.of(context).divider),
         borderRadius: BorderRadius.circular(InspectorDimensions.radiusM),
       ),
       child: Material(
@@ -154,8 +154,8 @@ class NotesTableOfContentsPreview extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(InspectorDimensions.spacingM),
       decoration: BoxDecoration(
-        color: InspectorColors.background,
-        border: Border.all(color: InspectorColors.divider),
+        color: InspectorColors.of(context).background,
+        border: Border.all(color: InspectorColors.of(context).divider),
         borderRadius: BorderRadius.circular(InspectorDimensions.radiusM),
       ),
       child: Column(
@@ -180,7 +180,7 @@ class NotesTableOfContentsPreview extends StatelessWidget {
                 child: Text(
                   '• ${heading.text}',
                   style: InspectorTypography.body.copyWith(
-                    color: InspectorColors.primary,
+                    color: InspectorColors.of(context).primary,
                   ),
                 ),
               ),
@@ -202,8 +202,8 @@ class NotesDiagramCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(InspectorDimensions.spacingM),
       decoration: BoxDecoration(
-        color: InspectorColors.background,
-        border: Border.all(color: InspectorColors.divider),
+        color: InspectorColors.of(context).background,
+        border: Border.all(color: InspectorColors.of(context).divider),
         borderRadius: BorderRadius.circular(InspectorDimensions.radiusM),
       ),
       child: Column(

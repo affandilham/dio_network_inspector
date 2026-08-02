@@ -99,14 +99,15 @@ class _InspectorRequestListWidgetState
   }
 
   Widget _buildToolbar() {
+    final colors = InspectorColors.of(context);
     return Container(
       height: 44,
       padding: const EdgeInsets.symmetric(
         horizontal: InspectorDimensions.spacingS,
       ),
-      decoration: const BoxDecoration(
-        color: InspectorColors.surface,
-        border: Border(bottom: BorderSide(color: InspectorColors.divider)),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        border: Border(bottom: BorderSide(color: colors.divider)),
       ),
       child: Row(
         children: [
@@ -116,43 +117,43 @@ class _InspectorRequestListWidgetState
               child: TextField(
                 controller: _searchController,
                 onChanged: (_) => setState(() {}),
-                style: InspectorTypography.body,
+                style: InspectorTypography.body.copyWith(color: colors.textPrimary),
                 decoration: InputDecoration(
                   hintText: 'Search requests',
                   hintStyle: InspectorTypography.body.copyWith(
-                    color: InspectorColors.textSecondary,
+                    color: colors.textSecondary,
                   ),
-                  prefixIcon: const Icon(
+                  prefixIcon: Icon(
                     Icons.search,
                     size: 16,
-                    color: InspectorColors.textSecondary,
+                    color: colors.textSecondary,
                   ),
                   isDense: true,
                   contentPadding: const EdgeInsets.symmetric(vertical: 8),
                   filled: true,
-                  fillColor: InspectorColors.background,
+                  fillColor: colors.background,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(
                       InspectorDimensions.radiusM,
                     ),
-                    borderSide: const BorderSide(
-                      color: InspectorColors.divider,
+                    borderSide: BorderSide(
+                      color: colors.divider,
                     ),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(
                       InspectorDimensions.radiusM,
                     ),
-                    borderSide: const BorderSide(
-                      color: InspectorColors.divider,
+                    borderSide: BorderSide(
+                      color: colors.divider,
                     ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(
                       InspectorDimensions.radiusM,
                     ),
-                    borderSide: const BorderSide(
-                      color: InspectorColors.primary,
+                    borderSide: BorderSide(
+                      color: colors.primary,
                     ),
                   ),
                 ),
@@ -217,9 +218,9 @@ class _InspectorRequestListWidgetState
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: _filter == _RequestFilter.all
-                        ? InspectorColors.background
-                        : InspectorColors.primaryContainer,
-                    border: Border.all(color: InspectorColors.divider),
+                        ? colors.background
+                        : colors.primaryContainer,
+                    border: Border.all(color: colors.divider),
                     borderRadius: BorderRadius.circular(
                       InspectorDimensions.radiusM,
                     ),
@@ -228,8 +229,8 @@ class _InspectorRequestListWidgetState
                     Icons.filter_list,
                     size: 18,
                     color: _filter == _RequestFilter.all
-                        ? InspectorColors.textBlueGrey
-                        : InspectorColors.primary,
+                        ? colors.textBlueGrey
+                        : colors.primary,
                   ),
                 ),
               ),
@@ -257,8 +258,8 @@ class _InspectorRequestListWidgetState
                     child: Container(
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: InspectorColors.background,
-                        border: Border.all(color: InspectorColors.divider),
+                        color: colors.background,
+                        border: Border.all(color: colors.divider),
                         borderRadius: BorderRadius.circular(
                           InspectorDimensions.radiusM,
                         ),
@@ -294,6 +295,7 @@ class _RequestTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = InspectorColors.of(context);
     final hasError = req.error != null || (req.statusCode ?? 0) >= 400;
     final isSuccess =
         !hasError &&
@@ -301,10 +303,10 @@ class _RequestTile extends StatelessWidget {
         req.statusCode! >= 200 &&
         req.statusCode! < 300;
     final statusColor = hasError
-        ? InspectorColors.error
+        ? colors.error
         : isSuccess
-        ? InspectorColors.success
-        : InspectorColors.textSecondary;
+        ? colors.success
+        : colors.textSecondary;
     final path = Uri.tryParse(req.url)?.path ?? req.url;
 
     return GestureDetector(
@@ -319,15 +321,15 @@ class _RequestTile extends StatelessWidget {
             right: InspectorDimensions.spacingM,
           ),
           decoration: BoxDecoration(
-            color: isSelected ? InspectorColors.primaryContainer : null,
+            color: isSelected ? colors.primaryContainer : null,
             border: Border(
               left: BorderSide(
                 color: isSelected
-                    ? InspectorColors.primary
+                    ? colors.primary
                     : Colors.transparent,
                 width: 3,
               ),
-              bottom: const BorderSide(color: InspectorColors.surface),
+              bottom: BorderSide(color: colors.surface),
             ),
           ),
           child: Row(
@@ -357,7 +359,7 @@ class _RequestTile extends StatelessWidget {
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
                   ),
-                  color: InspectorColors.textBlueGrey,
+                  color: colors.textBlueGrey,
                 ),
               ),
               const SizedBox(width: InspectorDimensions.spacingS),
@@ -387,7 +389,7 @@ class _RequestTile extends StatelessWidget {
                 '${req.duration}ms',
                 isMono: true,
                 style: const TextStyle(fontSize: 10),
-                color: InspectorColors.textSecondary,
+                color: colors.textSecondary,
               ),
             ],
           ),
@@ -397,6 +399,7 @@ class _RequestTile extends StatelessWidget {
   }
 
   void _showContextMenu(BuildContext context, TapDownDetails details) {
+    final colors = InspectorColors.of(context);
     final overlay =
         Navigator.of(context).overlay?.context.findRenderObject() as RenderBox?;
     if (overlay == null) return;
@@ -407,7 +410,7 @@ class _RequestTile extends StatelessWidget {
     showMenu(
       context: context,
       position: position,
-      color: InspectorColors.background,
+      color: colors.background,
       elevation: 6,
       constraints: const BoxConstraints(minWidth: 176),
       shape: RoundedRectangleBorder(
