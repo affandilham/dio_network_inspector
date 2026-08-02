@@ -291,16 +291,16 @@ class _InspectorUrlTesterWidgetState extends State<InspectorUrlTesterWidget> {
   @override
   Widget build(BuildContext context) {
     return BaseContainer(
-      color: InspectorColors.background,
+      color: InspectorColors.of(context).background,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Header
           Container(
             padding: const EdgeInsets.all(InspectorDimensions.spacingM),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               border: Border(
-                bottom: BorderSide(color: InspectorColors.divider),
+                bottom: BorderSide(color: InspectorColors.of(context).divider),
               ),
             ),
             child: const BaseText(
@@ -322,8 +322,8 @@ class _InspectorUrlTesterWidgetState extends State<InspectorUrlTesterWidget> {
                       children: [
                         Container(
                           decoration: BoxDecoration(
-                            color: InspectorColors.surface,
-                            border: Border.all(color: InspectorColors.divider),
+                            color: InspectorColors.of(context).surface,
+                            border: Border.all(color: InspectorColors.of(context).divider),
                             borderRadius: BorderRadius.circular(
                               InspectorDimensions.radiusS,
                             ),
@@ -365,7 +365,7 @@ class _InspectorUrlTesterWidgetState extends State<InspectorUrlTesterWidget> {
                             decoration: InputDecoration(
                               hintText: 'Enter request URL or paste cURL',
                               hintStyle: InspectorTypography.body.copyWith(
-                                color: InspectorColors.textSecondary,
+                                color: InspectorColors.of(context).textSecondary,
                               ),
                               isDense: true,
                               contentPadding: const EdgeInsets.symmetric(
@@ -389,8 +389,8 @@ class _InspectorUrlTesterWidgetState extends State<InspectorUrlTesterWidget> {
                                 ),
                               ),
                               focusedBorder: OutlineInputBorder(
-                                borderSide: const BorderSide(
-                                  color: InspectorColors.primary,
+                                borderSide: BorderSide(
+                                  color: InspectorColors.of(context).primary,
                                 ),
                                 borderRadius: BorderRadius.circular(
                                   InspectorDimensions.radiusS,
@@ -404,7 +404,7 @@ class _InspectorUrlTesterWidgetState extends State<InspectorUrlTesterWidget> {
                         ElevatedButton(
                           onPressed: _sendRequest,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: InspectorColors.primary,
+                            backgroundColor: InspectorColors.of(context).primary,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(
                               horizontal: InspectorDimensions.spacingL,
@@ -429,7 +429,7 @@ class _InspectorUrlTesterWidgetState extends State<InspectorUrlTesterWidget> {
                       decoration: InputDecoration(
                         hintText: 'Bearer Token (Optional)',
                         hintStyle: InspectorTypography.body.copyWith(
-                          color: InspectorColors.textSecondary,
+                          color: InspectorColors.of(context).textSecondary,
                         ),
                         isDense: true,
                         contentPadding: const EdgeInsets.symmetric(
@@ -453,8 +453,8 @@ class _InspectorUrlTesterWidgetState extends State<InspectorUrlTesterWidget> {
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderSide: const BorderSide(
-                            color: InspectorColors.primary,
+                          borderSide: BorderSide(
+                            color: InspectorColors.of(context).primary,
                           ),
                           borderRadius: BorderRadius.circular(
                             InspectorDimensions.radiusS,
@@ -475,7 +475,7 @@ class _InspectorUrlTesterWidgetState extends State<InspectorUrlTesterWidget> {
                         const SizedBox(width: InspectorDimensions.spacingS),
                         Container(
                           decoration: BoxDecoration(
-                            border: Border.all(color: InspectorColors.divider),
+                            border: Border.all(color: InspectorColors.of(context).divider),
                             borderRadius: BorderRadius.circular(
                               InspectorDimensions.radiusS,
                             ),
@@ -517,7 +517,7 @@ class _InspectorUrlTesterWidgetState extends State<InspectorUrlTesterWidget> {
                         decoration: InputDecoration(
                           hintText: 'Request Body (JSON, etc.)',
                           hintStyle: InspectorTypography.body.copyWith(
-                            color: InspectorColors.textSecondary,
+                            color: InspectorColors.of(context).textSecondary,
                           ),
                           isDense: true,
                           contentPadding: const EdgeInsets.symmetric(
@@ -541,8 +541,8 @@ class _InspectorUrlTesterWidgetState extends State<InspectorUrlTesterWidget> {
                             ),
                           ),
                           focusedBorder: OutlineInputBorder(
-                            borderSide: const BorderSide(
-                              color: InspectorColors.primary,
+                            borderSide: BorderSide(
+                              color: InspectorColors.of(context).primary,
                             ),
                             borderRadius: BorderRadius.circular(
                               InspectorDimensions.radiusS,
@@ -737,11 +737,11 @@ class _InspectorUrlTesterWidgetState extends State<InspectorUrlTesterWidget> {
                               label: BaseText(
                                 'Add Field',
                                 style: InspectorTypography.body.copyWith(
-                                  color: InspectorColors.primary,
+                                  color: InspectorColors.of(context).primary,
                                 ),
                               ),
                               style: TextButton.styleFrom(
-                                foregroundColor: InspectorColors.primary,
+                                foregroundColor: InspectorColors.of(context).primary,
                               ),
                             ),
                           ),
@@ -760,8 +760,8 @@ class _InspectorUrlTesterWidgetState extends State<InspectorUrlTesterWidget> {
               margin: const EdgeInsets.all(InspectorDimensions.spacingM),
               padding: const EdgeInsets.all(InspectorDimensions.spacingM),
               decoration: BoxDecoration(
-                color: InspectorColors.surface,
-                border: Border.all(color: InspectorColors.divider),
+                color: InspectorColors.of(context).surface,
+                border: Border.all(color: InspectorColors.of(context).divider),
                 borderRadius: BorderRadius.circular(
                   InspectorDimensions.radiusS,
                 ),

@@ -33,13 +33,14 @@ class JsonViewerToolbarWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = InspectorColors.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: InspectorDimensions.spacingM,
         vertical: InspectorDimensions.spacingXs,
       ),
       decoration: BoxDecoration(
-        color: InspectorColors.background,
+        color: colors.background,
         boxShadow: hasShadow
             ? [
                 BoxShadow(
@@ -58,16 +59,17 @@ class JsonViewerToolbarWidget extends StatelessWidget {
               child: TextField(
                 controller: searchController,
                 onChanged: onSearchChanged,
+                style: InspectorTypography.body.copyWith(color: colors.textPrimary),
                 decoration: InputDecoration(
                   isDense: true,
                   hintText: 'Find in JSON...',
                   hintStyle: InspectorTypography.body.copyWith(
-                    color: InspectorColors.textSecondary,
+                    color: colors.textSecondary,
                   ),
-                  prefixIcon: const Icon(
+                  prefixIcon: Icon(
                     Icons.search,
                     size: 16,
-                    color: InspectorColors.textSecondary,
+                    color: colors.textSecondary,
                   ),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: InspectorDimensions.spacingS,
@@ -77,30 +79,29 @@ class JsonViewerToolbarWidget extends StatelessWidget {
                     borderRadius: BorderRadius.circular(
                       InspectorDimensions.radiusM,
                     ),
-                    borderSide: const BorderSide(
-                      color: InspectorColors.divider,
+                    borderSide: BorderSide(
+                      color: colors.divider,
                     ),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(
                       InspectorDimensions.radiusM,
                     ),
-                    borderSide: const BorderSide(
-                      color: InspectorColors.divider,
+                    borderSide: BorderSide(
+                      color: colors.divider,
                     ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(
                       InspectorDimensions.radiusM,
                     ),
-                    borderSide: const BorderSide(
-                      color: InspectorColors.primary,
+                    borderSide: BorderSide(
+                      color: colors.primary,
                     ),
                   ),
                   filled: true,
-                  fillColor: InspectorColors.background,
+                  fillColor: colors.background,
                 ),
-                style: InspectorTypography.body,
               ),
             ),
           ),
@@ -108,7 +109,7 @@ class JsonViewerToolbarWidget extends StatelessWidget {
           if (matchCount > 0)
             BaseText(
               '${currentMatchIndex + 1}/$matchCount',
-              color: InspectorColors.textSecondary,
+              color: colors.textSecondary,
             ),
           BaseIconButton(
             icon: Icons.keyboard_arrow_up,
@@ -119,7 +120,7 @@ class JsonViewerToolbarWidget extends StatelessWidget {
             onPressed: matchCount == 0 ? null : onNextMatch,
           ),
           const SizedBox(width: InspectorDimensions.spacingS),
-          Container(width: 1, height: 16, color: InspectorColors.divider),
+          Container(width: 1, height: 16, color: colors.divider),
           const SizedBox(width: InspectorDimensions.spacingS),
           BaseIconButton(icon: Icons.remove, onPressed: onZoomOut),
           BaseText('${(zoomLevel * 100).toInt()}%'),

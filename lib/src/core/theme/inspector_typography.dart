@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'inspector_colors.dart';
 
+/// Defines standard typography styles for dio_network_inspector.
+/// Colors are deliberately omitted here so text components (like [BaseText])
+/// and theme hierarchies can dynamically resolve colors based on dark/light mode context.
 class InspectorTypography {
   static const String fontFamilyMenlo = 'Menlo';
   static const List<String> fontFamilyFallback = [
@@ -12,25 +14,21 @@ class InspectorTypography {
   static const TextStyle title = TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.w600,
-    color: InspectorColors.textPrimary,
   );
 
   static const TextStyle sectionTitle = TextStyle(
     fontSize: 12,
     fontWeight: FontWeight.w600,
-    color: InspectorColors.textPrimary,
   );
 
   static const TextStyle body = TextStyle(
     fontSize: 12,
     fontWeight: FontWeight.normal,
-    color: InspectorColors.textPrimary,
   );
 
   static const TextStyle bodySmall = TextStyle(
     fontSize: 10,
     fontWeight: FontWeight.normal,
-    color: InspectorColors.textSecondary,
   );
 
   static const TextStyle mono = TextStyle(

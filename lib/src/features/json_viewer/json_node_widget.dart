@@ -94,24 +94,25 @@ class _JsonNodeWidgetState extends State<JsonNodeWidget> {
     return value.toString();
   }
 
-  Widget _buildValue(dynamic value, double fontSize) {
+  Widget _buildValue(BuildContext context, dynamic value, double fontSize) {
+    final colors = InspectorColors.of(context);
     if (value == null) {
       return BaseText(
         'null',
         style: InspectorTypography.mono.copyWith(fontSize: fontSize),
-        color: InspectorColors.jsonNull,
+        color: colors.jsonNull,
       );
     } else if (value is String) {
       return BaseText(
         '"$value"',
         style: InspectorTypography.mono.copyWith(fontSize: fontSize),
-        color: InspectorColors.jsonString,
+        color: colors.jsonString,
       );
     } else if (value is num || value is bool) {
       return BaseText(
         value.toString(),
         style: InspectorTypography.mono.copyWith(fontSize: fontSize),
-        color: InspectorColors.jsonNumber,
+        color: colors.jsonNumber,
       );
     } else {
       return BaseText(
@@ -123,6 +124,7 @@ class _JsonNodeWidgetState extends State<JsonNodeWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = InspectorColors.of(context);
     final double fontSize = 12.0 * widget.zoomLevel;
     final double iconSize = 16.0 * widget.zoomLevel;
 
@@ -133,7 +135,7 @@ class _JsonNodeWidgetState extends State<JsonNodeWidget> {
           Icon(
             _isExpanded ? Icons.arrow_drop_down : Icons.arrow_right,
             size: iconSize,
-            color: InspectorColors.textSecondary,
+            color: colors.textSecondary,
           )
         else
           SizedBox(width: iconSize),
@@ -144,7 +146,7 @@ class _JsonNodeWidgetState extends State<JsonNodeWidget> {
               fontWeight: FontWeight.bold,
               fontSize: fontSize,
             ),
-            color: InspectorColors.jsonKey,
+            color: colors.jsonKey,
           ),
         ],
         if (!_isExpanded || !_isExpandable)
@@ -152,10 +154,10 @@ class _JsonNodeWidgetState extends State<JsonNodeWidget> {
             BaseText(
               _getPreview(widget.value),
               style: InspectorTypography.mono.copyWith(fontSize: fontSize),
-              color: InspectorColors.textSecondary,
+              color: colors.textSecondary,
             )
           else
-            _buildValue(widget.value, fontSize)
+            _buildValue(context, widget.value, fontSize)
         else
           BaseText(
             widget.value is Map ? '{' : '[',
@@ -168,7 +170,7 @@ class _JsonNodeWidgetState extends State<JsonNodeWidget> {
       content = Container(
         key: _isActiveMatch ? widget.activeMatchKey : null,
         color: _isActiveMatch
-            ? InspectorColors.warning.withValues(alpha: 0.4)
+            ? colors.warning.withValues(alpha: 0.4)
             : Colors.yellow.withValues(alpha: 0.4), // keep yellow standard
         child: content,
       );

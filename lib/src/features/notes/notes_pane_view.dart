@@ -86,6 +86,7 @@ class NotesPaneView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = InspectorColors.of(context);
     return Padding(
       padding: const EdgeInsets.all(InspectorDimensions.spacingM),
       child: Column(
@@ -97,7 +98,7 @@ class NotesPaneView extends StatelessWidget {
             document?.isExternal == true
                 ? 'Opened from your file manager.'
                 : 'One shared note, saved only on this device.',
-            color: InspectorColors.textSecondary,
+            color: colors.textSecondary,
           ),
           if (isDeleteArmed) ...[
             const SizedBox(height: InspectorDimensions.spacingS),

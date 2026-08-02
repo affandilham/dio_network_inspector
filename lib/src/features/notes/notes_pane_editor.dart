@@ -47,18 +47,18 @@ class NotesPaneEditor extends StatelessWidget {
 
   Widget _editor(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: InspectorColors.surface,
+      decoration: BoxDecoration(
+        color: InspectorColors.of(context).surface,
         border: Border(
-          left: BorderSide(color: InspectorColors.divider),
-          right: BorderSide(color: InspectorColors.divider),
-          bottom: BorderSide(color: InspectorColors.divider),
+          left: BorderSide(color: InspectorColors.of(context).divider),
+          right: BorderSide(color: InspectorColors.of(context).divider),
+          bottom: BorderSide(color: InspectorColors.of(context).divider),
         ),
-        borderRadius: BorderRadius.vertical(
+        borderRadius: const BorderRadius.vertical(
           bottom: Radius.circular(InspectorDimensions.radiusL),
         ),
       ),
-      child: isWrapping ? _textField() : _nonWrappingEditor(context),
+      child: isWrapping ? _textField(context) : _nonWrappingEditor(context),
     );
   }
 
@@ -69,7 +69,7 @@ class NotesPaneEditor extends StatelessWidget {
           text: TextSpan(
             text: controller.text.isEmpty ? ' ' : controller.text,
             style: InspectorTypography.mono.copyWith(
-              color: InspectorColors.textPrimary,
+              color: InspectorColors.of(context).textPrimary,
               height: 1.55,
             ),
           ),
@@ -101,7 +101,7 @@ class NotesPaneEditor extends StatelessWidget {
                 child: SizedBox(
                   width: editorWidth,
                   height: constraints.maxHeight,
-                  child: _textField(scrollController: verticalScrollController),
+                  child: _textField(context, scrollController: verticalScrollController),
                 ),
               ),
             ),
@@ -111,7 +111,8 @@ class NotesPaneEditor extends StatelessWidget {
     );
   }
 
-  Widget _textField({ScrollController? scrollController}) {
+  Widget _textField(BuildContext context, {ScrollController? scrollController}) {
+    final colors = InspectorColors.of(context);
     return TextField(
       controller: controller,
       scrollController: scrollController,
@@ -121,13 +122,13 @@ class NotesPaneEditor extends StatelessWidget {
       textAlignVertical: TextAlignVertical.top,
       onChanged: onChanged,
       style: InspectorTypography.mono.copyWith(
-        color: InspectorColors.textPrimary,
+        color: colors.textPrimary,
         height: 1.55,
       ),
-      decoration: const InputDecoration(
+      decoration: InputDecoration(
         hintText: 'Write a shared debugging recap in Markdown…',
-        hintStyle: TextStyle(color: InspectorColors.tertiary),
-        contentPadding: EdgeInsets.all(InspectorDimensions.spacingM),
+        hintStyle: TextStyle(color: colors.tertiary),
+        contentPadding: const EdgeInsets.all(InspectorDimensions.spacingM),
         border: InputBorder.none,
       ),
     );
@@ -161,8 +162,8 @@ class NotesFileActionButton extends StatelessWidget {
           onPressed: isBusy ? null : onPressed,
           icon: Icon(icon, size: InspectorDimensions.iconM),
           color: isDestructive
-              ? InspectorColors.error
-              : InspectorColors.textBlueGrey,
+              ? InspectorColors.of(context).error
+              : InspectorColors.of(context).textBlueGrey,
           splashRadius: 16,
           constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
           padding: EdgeInsets.zero,
@@ -194,8 +195,8 @@ class NotesDeleteConfirmation extends StatelessWidget {
         vertical: InspectorDimensions.spacingXs,
       ),
       decoration: BoxDecoration(
-        color: InspectorColors.error.withAlpha(16),
-        border: Border.all(color: InspectorColors.error.withAlpha(64)),
+        color: InspectorColors.of(context).error.withAlpha(16),
+        border: Border.all(color: InspectorColors.of(context).error.withAlpha(64)),
         borderRadius: BorderRadius.circular(InspectorDimensions.radiusM),
       ),
       child: Row(
@@ -216,7 +217,7 @@ class NotesDeleteConfirmation extends StatelessWidget {
           TextButton(onPressed: onCancel, child: const Text('Cancel')),
           TextButton(
             onPressed: isBusy ? null : onDelete,
-            style: TextButton.styleFrom(foregroundColor: InspectorColors.error),
+            style: TextButton.styleFrom(foregroundColor: InspectorColors.of(context).error),
             child: const Text('Delete'),
           ),
         ],
@@ -252,7 +253,7 @@ class NotesPaneFooter extends StatelessWidget {
             Icon(
               isSaving ? Icons.sync : Icons.check_circle_outline,
               size: InspectorDimensions.iconS,
-              color: InspectorColors.success,
+              color: InspectorColors.of(context).success,
             ),
             const SizedBox(width: InspectorDimensions.spacingXs),
             Expanded(
@@ -263,13 +264,14 @@ class NotesPaneFooter extends StatelessWidget {
                   label,
                   maxLines: 1,
                   style: InspectorTypography.bodySmall,
-                  color: InspectorColors.textSecondary,
+                  color: InspectorColors.of(context).textSecondary,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
             ),
             const SizedBox(width: InspectorDimensions.spacingS),
             _action(
+              context,
               compact,
               Icons.save_alt_outlined,
               'Save',
@@ -277,6 +279,7 @@ class NotesPaneFooter extends StatelessWidget {
               isSaving ? null : onSave,
             ),
             _action(
+              context,
               compact,
               Icons.copy_outlined,
               'Copy Markdown',
@@ -290,19 +293,21 @@ class NotesPaneFooter extends StatelessWidget {
   }
 
   Widget _action(
+    BuildContext context,
     bool compact,
     IconData icon,
     String label,
     String tooltip,
     VoidCallback? onPressed,
   ) {
+    final colors = InspectorColors.of(context);
     if (!compact) {
       return TextButton.icon(
         onPressed: onPressed,
         icon: Icon(icon, size: InspectorDimensions.iconS),
         label: Text(label),
         style: TextButton.styleFrom(
-          foregroundColor: InspectorColors.textBlueGrey,
+          foregroundColor: colors.textBlueGrey,
           textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
           padding: const EdgeInsets.symmetric(
             horizontal: InspectorDimensions.spacingS,
@@ -319,7 +324,7 @@ class NotesPaneFooter extends StatelessWidget {
         child: IconButton(
           onPressed: onPressed,
           icon: Icon(icon, size: InspectorDimensions.iconS),
-          color: InspectorColors.textBlueGrey,
+          color: colors.textBlueGrey,
           splashRadius: 16,
           constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
           padding: EdgeInsets.zero,

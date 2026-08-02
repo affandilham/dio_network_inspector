@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'resizable_window_controller.dart';
 import '../../core/theme/inspector_colors.dart';
 import '../../core/theme/inspector_dimensions.dart';
+import '../../dio_network_inspector.dart';
 
 class ResizableWindow extends StatefulWidget {
   final Widget header;
@@ -9,6 +10,9 @@ class ResizableWindow extends StatefulWidget {
   final VoidCallback onClose;
   final Rect initialRect;
   final ValueChanged<Rect>? onRectChanged;
+  /// Optional theme override. When null the window follows the host app's
+  /// active [ThemeMode] via [DioNetworkInspector.instance.themeMode].
+  final ThemeMode? themeMode;
 
   const ResizableWindow({
     super.key,
@@ -17,6 +21,7 @@ class ResizableWindow extends StatefulWidget {
     required this.onClose,
     required this.initialRect,
     this.onRectChanged,
+    this.themeMode,
   });
 
   @override
@@ -101,40 +106,88 @@ class _ResizableWindowState extends State<ResizableWindow> {
           child: Stack(
             children: [
               Positioned.fill(
-                child: Material(
-                  elevation: 8,
-                  borderRadius: BorderRadius.circular(InspectorDimensions.radiusL),
-                  clipBehavior: Clip.antiAlias,
-                  color: InspectorColors.background,
-                  child: MaterialApp(
-                    debugShowCheckedModeBanner: false,
-                    color: Colors.transparent,
-                    theme: ThemeData(
+                child: ValueListenableBuilder<ThemeMode>(
+                  valueListenable: DioNetworkInspector.instance.themeMode,
+                  builder: (context, inspectorThemeMode, child) {
+                    // Effective themeMode: explicit prop beats global notifier.
+                    final effectiveThemeMode =
+                        widget.themeMode ?? inspectorThemeMode;
+
+                    // Resolve background for the Material host using the
+                    // parent's brightness so it agrees with system before
+                    // the nested MaterialApp overrides it.
+                    final hostBrightness = Theme.of(context).brightness;
+                    final darkMode =
+                        effectiveThemeMode == ThemeMode.dark ||
+                        (effectiveThemeMode == ThemeMode.system &&
+                            hostBrightness == Brightness.dark);
+                    final colors = darkMode
+                        ? InspectorColors.dark
+                        : InspectorColors.light;
+
+                    ThemeData buildTheme(InspectorColorsData c) => ThemeData(
                       useMaterial3: true,
+                      brightness: darkMode ? Brightness.dark : Brightness.light,
                       colorScheme: ColorScheme.fromSeed(
-                        seedColor: InspectorColors.primary,
-                        primary: InspectorColors.primary,
-                        primaryContainer: InspectorColors.primaryContainer,
-                        secondary: InspectorColors.secondary,
-                        tertiary: InspectorColors.tertiary,
+                        seedColor: c.primary,
+                        brightness: darkMode
+                            ? Brightness.dark
+                            : Brightness.light,
+                        primary: c.primary,
+                        primaryContainer: c.primaryContainer,
+                        secondary: c.secondary,
+                        tertiary: c.tertiary,
+                        surface: c.surface,
                       ),
-                    ),
-                    home: Scaffold(
-                      backgroundColor: Colors.transparent,
-                      body: Column(
-                        children: [
-                          GestureDetector(
-                            onPanUpdate: (details) {
-                              _controller.shiftRect(details.delta);
-                            },
-                            child: widget.header,
+                      scaffoldBackgroundColor: c.background,
+                      cardColor: c.surface,
+                      dividerColor: c.divider,
+                      popupMenuTheme: PopupMenuThemeData(
+                        color: c.background,
+                        elevation: 6,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            InspectorDimensions.radiusXl,
                           ),
-                          const Divider(height: 1, thickness: 1, color: InspectorColors.divider),
-                          Expanded(child: widget.body),
-                        ],
+                        ),
                       ),
-                    ),
-                  ),
+                    );
+
+                    return Material(
+                      elevation: 8,
+                      borderRadius: BorderRadius.circular(
+                        InspectorDimensions.radiusL,
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      color: colors.background,
+                      child: MaterialApp(
+                        debugShowCheckedModeBanner: false,
+                        color: Colors.transparent,
+                        theme: buildTheme(InspectorColors.light),
+                        darkTheme: buildTheme(InspectorColors.dark),
+                        themeMode: effectiveThemeMode,
+                        home: Scaffold(
+                          backgroundColor: Colors.transparent,
+                          body: Column(
+                            children: [
+                              GestureDetector(
+                                onPanUpdate: (details) {
+                                  _controller.shiftRect(details.delta);
+                                },
+                                child: widget.header,
+                              ),
+                              Divider(
+                                height: 1,
+                                thickness: 1,
+                                color: colors.divider,
+                              ),
+                              Expanded(child: widget.body),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
               // Edges

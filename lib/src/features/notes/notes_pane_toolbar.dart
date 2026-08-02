@@ -65,10 +65,11 @@ class NotesPaneToolbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = InspectorColors.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: InspectorColors.background,
-        border: Border.all(color: InspectorColors.divider),
+        color: colors.background,
+        border: Border.all(color: colors.divider),
         borderRadius: const BorderRadius.vertical(
           top: Radius.circular(InspectorDimensions.radiusL),
         ),
@@ -77,21 +78,21 @@ class NotesPaneToolbar extends StatelessWidget {
         children: [
           Row(
             children: [
-              _modeTab('Write', false),
-              _modeTab('Preview', true),
+              _modeTab(context, 'Write', false),
+              _modeTab(context, 'Preview', true),
               const Spacer(),
-              const Padding(
-                padding: EdgeInsets.only(right: InspectorDimensions.spacingS),
+              Padding(
+                padding: const EdgeInsets.only(right: InspectorDimensions.spacingS),
                 child: BaseText(
                   'Markdown',
                   style: InspectorTypography.bodySmall,
-                  color: InspectorColors.tertiary,
+                  color: colors.tertiary,
                 ),
               ),
             ],
           ),
           if (!isPreview) ...[
-            const Divider(height: 1, color: InspectorColors.divider),
+            Divider(height: 1, color: colors.divider),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(
@@ -100,53 +101,25 @@ class NotesPaneToolbar extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  _historyTool(
-                    Icons.undo,
-                    'Undo (⌘/Ctrl+Z)',
-                    canUndo ? onUndo : null,
-                  ),
-                  _historyTool(
-                    Icons.redo,
-                    'Redo (⌘/Ctrl+Shift+Z)',
-                    canRedo ? onRedo : null,
-                  ),
-                  _separator(),
-                  _tool(Icons.format_bold, 'Bold', onBold),
-                  _tool(Icons.format_italic, 'Italic', onItalic),
-                  _tool(
-                    Icons.strikethrough_s,
-                    'Strikethrough',
-                    onStrikethrough,
-                  ),
-                  _separator(),
-                  _tool(
-                    Icons.format_list_bulleted,
-                    'Bullet list',
-                    onBulletList,
-                  ),
-                  _tool(
-                    Icons.format_list_numbered,
-                    'Numbered list',
-                    onNumberedList,
-                  ),
-                  _tool(Icons.checklist, 'Task list', onTaskList),
-                  _separator(),
-                  _tool(Icons.code, 'Inline code', onInlineCode),
-                  _tool(Icons.link, 'Link', onLink),
-                  _tool(
-                    Icons.table_chart_outlined,
-                    'Reformat table',
-                    onReformatTable,
-                  ),
-                  _tool(Icons.attach_file, 'Attachment link', onAttachment),
-                  _tool(
-                    Icons.terminal_outlined,
-                    'Slash command',
-                    onSlashCommand,
-                  ),
-                  _separator(),
-                  _wrapToggle(),
-                  _moreMenu(),
+                  _historyTool(context, Icons.undo, 'Undo (\u2318/Ctrl+Z)', canUndo ? onUndo : null),
+                  _historyTool(context, Icons.redo, 'Redo (\u2318/Ctrl+Shift+Z)', canRedo ? onRedo : null),
+                  _separator(context),
+                  _tool(context, Icons.format_bold, 'Bold', onBold),
+                  _tool(context, Icons.format_italic, 'Italic', onItalic),
+                  _tool(context, Icons.strikethrough_s, 'Strikethrough', onStrikethrough),
+                  _separator(context),
+                  _tool(context, Icons.format_list_bulleted, 'Bullet list', onBulletList),
+                  _tool(context, Icons.format_list_numbered, 'Numbered list', onNumberedList),
+                  _tool(context, Icons.checklist, 'Task list', onTaskList),
+                  _separator(context),
+                  _tool(context, Icons.code, 'Inline code', onInlineCode),
+                  _tool(context, Icons.link, 'Link', onLink),
+                  _tool(context, Icons.table_chart_outlined, 'Reformat table', onReformatTable),
+                  _tool(context, Icons.attach_file, 'Attachment link', onAttachment),
+                  _tool(context, Icons.terminal_outlined, 'Slash command', onSlashCommand),
+                  _separator(context),
+                  _wrapToggle(context),
+                  _moreMenu(context),
                 ],
               ),
             ),
@@ -156,7 +129,8 @@ class NotesPaneToolbar extends StatelessWidget {
     );
   }
 
-  Widget _modeTab(String label, bool preview) {
+  Widget _modeTab(BuildContext context, String label, bool preview) {
+    final colors = InspectorColors.of(context);
     final selected = isPreview == preview;
     return InkWell(
       onTap: () => onModeChanged(preview),
@@ -168,7 +142,7 @@ class NotesPaneToolbar extends StatelessWidget {
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(
-              color: selected ? InspectorColors.primary : Colors.transparent,
+              color: selected ? colors.primary : Colors.transparent,
               width: 2,
             ),
           ),
@@ -178,15 +152,14 @@ class NotesPaneToolbar extends StatelessWidget {
           style: InspectorTypography.body.copyWith(
             fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
           ),
-          color: selected
-              ? InspectorColors.textPrimary
-              : InspectorColors.textSecondary,
+          color: selected ? colors.textPrimary : colors.textSecondary,
         ),
       ),
     );
   }
 
-  Widget _tool(IconData icon, String label, VoidCallback onPressed) {
+  Widget _tool(BuildContext context, IconData icon, String label, VoidCallback onPressed) {
+    final colors = InspectorColors.of(context);
     return Semantics(
       label: label,
       button: true,
@@ -195,7 +168,7 @@ class NotesPaneToolbar extends StatelessWidget {
         child: IconButton(
           onPressed: onPressed,
           icon: Icon(icon, size: InspectorDimensions.iconM),
-          color: InspectorColors.textBlueGrey,
+          color: colors.textBlueGrey,
           splashRadius: 16,
           constraints: const BoxConstraints(minWidth: 32, minHeight: 28),
           padding: EdgeInsets.zero,
@@ -204,7 +177,8 @@ class NotesPaneToolbar extends StatelessWidget {
     );
   }
 
-  Widget _historyTool(IconData icon, String label, VoidCallback? onPressed) {
+  Widget _historyTool(BuildContext context, IconData icon, String label, VoidCallback? onPressed) {
+    final colors = InspectorColors.of(context);
     return Semantics(
       label: label,
       button: true,
@@ -214,8 +188,8 @@ class NotesPaneToolbar extends StatelessWidget {
         child: IconButton(
           onPressed: onPressed,
           icon: Icon(icon, size: InspectorDimensions.iconM),
-          color: InspectorColors.textBlueGrey,
-          disabledColor: InspectorColors.tertiary.withAlpha(96),
+          color: colors.textBlueGrey,
+          disabledColor: colors.tertiary.withAlpha(96),
           splashRadius: 16,
           constraints: const BoxConstraints(minWidth: 32, minHeight: 28),
           padding: EdgeInsets.zero,
@@ -224,12 +198,16 @@ class NotesPaneToolbar extends StatelessWidget {
     );
   }
 
-  Widget _separator() => const SizedBox(
-    height: 20,
-    child: VerticalDivider(width: 17, color: InspectorColors.divider),
-  );
+  Widget _separator(BuildContext context) {
+    final colors = InspectorColors.of(context);
+    return SizedBox(
+      height: 20,
+      child: VerticalDivider(width: 17, color: colors.divider),
+    );
+  }
 
-  Widget _wrapToggle() {
+  Widget _wrapToggle(BuildContext context) {
+    final colors = InspectorColors.of(context);
     final label = isWrapping
         ? 'Disable line wrap and scroll horizontally'
         : 'Wrap long lines';
@@ -244,9 +222,7 @@ class NotesPaneToolbar extends StatelessWidget {
             isWrapping ? Icons.wrap_text : Icons.swap_horiz,
             size: InspectorDimensions.iconM,
           ),
-          color: isWrapping
-              ? InspectorColors.primary
-              : InspectorColors.textBlueGrey,
+          color: isWrapping ? colors.primary : colors.textBlueGrey,
           splashRadius: 16,
           constraints: const BoxConstraints(minWidth: 32, minHeight: 28),
           padding: EdgeInsets.zero,
@@ -255,13 +231,14 @@ class NotesPaneToolbar extends StatelessWidget {
     );
   }
 
-  Widget _moreMenu() {
+  Widget _moreMenu(BuildContext context) {
+    final colors = InspectorColors.of(context);
     return PopupMenuButton<MarkdownInsertAction>(
       tooltip: null,
       position: PopupMenuPosition.under,
       offset: const Offset(0, 4),
       constraints: const BoxConstraints(minWidth: 200),
-      color: InspectorColors.background,
+      color: colors.background,
       elevation: 6,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(InspectorDimensions.radiusXl),
@@ -298,12 +275,12 @@ class NotesPaneToolbar extends StatelessWidget {
           text: 'Reformat table',
         ),
       ],
-      child: const Padding(
-        padding: EdgeInsets.symmetric(horizontal: InspectorDimensions.spacingS),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: InspectorDimensions.spacingS),
         child: Icon(
           Icons.add,
           size: InspectorDimensions.iconL,
-          color: InspectorColors.textBlueGrey,
+          color: colors.textBlueGrey,
         ),
       ),
     );

@@ -53,99 +53,109 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildRequestSummary(),
+        _buildRequestSummary(context),
         // Tabs Header
-        BaseContainer(
-          color: InspectorColors.surface,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return ValueListenableBuilder<DetailPaneStateData>(
-                valueListenable: _controller,
-                builder: (context, state, child) {
-                  final tabs = [
-                    'Headers',
-                    'Payload',
-                    'Preview',
-                    'Response',
-                    'Timing',
-                  ];
-                  final tabWidths = [85.0, 80.0, 80.0, 90.0, 70.0];
-                  final moreButtonWidth = 32.0;
+        Builder(
+          builder: (context) {
+            final colors = InspectorColors.of(context);
+            return BaseContainer(
+              color: colors.surface,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return ValueListenableBuilder<DetailPaneStateData>(
+                    valueListenable: _controller,
+                    builder: (context, state, child) {
+                      final tabs = [
+                        'Headers',
+                        'Payload',
+                        'Preview',
+                        'Response',
+                        'Timing',
+                      ];
+                      final tabWidths = [85.0, 80.0, 80.0, 90.0, 70.0];
+                      final moreButtonWidth = 32.0;
 
-                  List<int> visibleTabs = [];
-                  List<int> hiddenTabs = [];
+                      List<int> visibleTabs = [];
+                      List<int> hiddenTabs = [];
 
-                  double currentWidth = 40.0;
-                  bool overflow = false;
+                      double currentWidth = 40.0;
+                      bool overflow = false;
 
-                  for (int i = 0; i < tabs.length; i++) {
-                    if (!overflow) {
-                      double remainingTabsWidth = 0;
-                      for (int j = i; j < tabs.length; j++) {
-                        remainingTabsWidth += tabWidths[j];
-                      }
+                      for (int i = 0; i < tabs.length; i++) {
+                        if (!overflow) {
+                          double remainingTabsWidth = 0;
+                          for (int j = i; j < tabs.length; j++) {
+                            remainingTabsWidth += tabWidths[j];
+                          }
 
-                      if (currentWidth + remainingTabsWidth <=
-                          constraints.maxWidth) {
-                        visibleTabs.add(i);
-                        currentWidth += tabWidths[i];
-                      } else {
-                        if (currentWidth + tabWidths[i] + moreButtonWidth <=
-                            constraints.maxWidth) {
-                          visibleTabs.add(i);
-                          currentWidth += tabWidths[i];
+                          if (currentWidth + remainingTabsWidth <=
+                              constraints.maxWidth) {
+                            visibleTabs.add(i);
+                            currentWidth += tabWidths[i];
+                          } else {
+                            if (currentWidth + tabWidths[i] + moreButtonWidth <=
+                                constraints.maxWidth) {
+                              visibleTabs.add(i);
+                              currentWidth += tabWidths[i];
+                            } else {
+                              overflow = true;
+                              hiddenTabs.add(i);
+                            }
+                          }
                         } else {
-                          overflow = true;
                           hiddenTabs.add(i);
                         }
                       }
-                    } else {
-                      hiddenTabs.add(i);
-                    }
-                  }
 
-                  if (hiddenTabs.contains(state.selectedTabIndex) &&
-                      visibleTabs.isNotEmpty) {
-                    final lastVisible = visibleTabs.removeLast();
-                    visibleTabs.add(state.selectedTabIndex);
-                    hiddenTabs.remove(state.selectedTabIndex);
-                    hiddenTabs.add(lastVisible);
-                    hiddenTabs.sort();
-                  }
+                      if (hiddenTabs.contains(state.selectedTabIndex) &&
+                          visibleTabs.isNotEmpty) {
+                        final lastVisible = visibleTabs.removeLast();
+                        visibleTabs.add(state.selectedTabIndex);
+                        hiddenTabs.remove(state.selectedTabIndex);
+                        hiddenTabs.add(lastVisible);
+                        hiddenTabs.sort();
+                      }
 
-                  return Row(
-                    children: [
-                      InkWell(
-                        onTap: widget.onClose,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: InspectorDimensions.spacingM,
-                            vertical: InspectorDimensions.spacingS,
+                      return Row(
+                        children: [
+                          InkWell(
+                            onTap: widget.onClose,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: InspectorDimensions.spacingM,
+                                vertical: InspectorDimensions.spacingS,
+                              ),
+                              child: Icon(
+                                Icons.close,
+                                size: InspectorDimensions.iconM,
+                                color: colors.textSecondary,
+                              ),
+                            ),
                           ),
-                          child: const Icon(
-                            Icons.close,
-                            size: InspectorDimensions.iconM,
-                            color: InspectorColors.textSecondary,
+                          ...visibleTabs.map(
+                            (i) => _buildTab(tabs[i], i, state.selectedTabIndex),
                           ),
-                        ),
-                      ),
-                      ...visibleTabs.map(
-                        (i) => _buildTab(tabs[i], i, state.selectedTabIndex),
-                      ),
-                      if (hiddenTabs.isNotEmpty)
-                        _buildMoreTabsButton(
-                          hiddenTabs,
-                          tabs,
-                          state.selectedTabIndex,
-                        ),
-                    ],
+                          if (hiddenTabs.isNotEmpty)
+                            _buildMoreTabsButton(
+                              hiddenTabs,
+                              tabs,
+                              state.selectedTabIndex,
+                            ),
+                        ],
+                      );
+                    },
                   );
                 },
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
-        const Divider(height: 1, thickness: 1, color: InspectorColors.divider),
+        Builder(
+          builder: (context) {
+            final colors = InspectorColors.of(context);
+            return Divider(height: 1, thickness: 1, color: colors.divider);
+          },
+        ),
         Expanded(
           child: SelectionArea(
             child: ValueListenableBuilder<DetailPaneStateData>(
@@ -160,12 +170,14 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
     );
   }
 
-  Widget _buildRequestSummary() {
+
+  Widget _buildRequestSummary(BuildContext context) {
+    final colors = InspectorColors.of(context);
     final request = widget.request;
     final isError = request.error != null || (request.statusCode ?? 0) >= 400;
     final statusColor = isError
-        ? InspectorColors.error
-        : InspectorColors.success;
+        ? colors.error
+        : colors.success;
     final path = Uri.tryParse(request.url)?.path ?? request.url;
 
     return Container(
@@ -173,9 +185,9 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
       padding: const EdgeInsets.symmetric(
         horizontal: InspectorDimensions.spacingM,
       ),
-      decoration: const BoxDecoration(
-        color: InspectorColors.surface,
-        border: Border(bottom: BorderSide(color: InspectorColors.divider)),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        border: Border(bottom: BorderSide(color: colors.divider)),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -185,7 +197,7 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                 decoration: BoxDecoration(
-                  color: InspectorColors.primaryContainer,
+                  color: colors.primaryContainer,
                   borderRadius: BorderRadius.circular(
                     InspectorDimensions.radiusS,
                   ),
@@ -197,7 +209,7 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                   ),
-                  color: InspectorColors.primary,
+                  color: colors.primary,
                 ),
               ),
               const SizedBox(width: InspectorDimensions.spacingS),
@@ -235,16 +247,16 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
                 '${request.duration}ms',
                 isMono: true,
                 style: const TextStyle(fontSize: 10),
-                color: InspectorColors.textSecondary,
+                color: colors.textSecondary,
               ),
               const SizedBox(width: InspectorDimensions.spacingS),
               if (useOverflowMenu)
-                _buildActionMenu(request)
+                _buildActionMenu(request, colors)
               else ...[
                 if (request.responseData != null)
                   OutlinedButton(
                     onPressed: _copyResponse,
-                    style: _summaryButtonStyle,
+                    style: _summaryButtonStyle(colors),
                     child: const Text('JSON'),
                   ),
                 if (request.responseData != null)
@@ -252,17 +264,17 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
                 OutlinedButton(
                   onPressed: () =>
                       RequestListController().handleCopyCurl(context, request),
-                  style: _summaryButtonStyle,
+                  style: _summaryButtonStyle(colors),
                   child: const Text('cURL'),
                 ),
                 const SizedBox(width: InspectorDimensions.spacingXs),
                 OutlinedButton(
                   onPressed: _replayRequest,
-                  style: _summaryButtonStyle,
+                  style: _summaryButtonStyle(colors),
                   child: const Text('Replay'),
                 ),
                 const SizedBox(width: InspectorDimensions.spacingXs),
-                _buildActionMenu(request),
+                _buildActionMenu(request, colors),
               ],
             ],
           );
@@ -271,7 +283,7 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
     );
   }
 
-  Widget _buildActionMenu(NetworkRequest request) =>
+  Widget _buildActionMenu(NetworkRequest request, InspectorColorsData colors) =>
       ValueListenableBuilder<SplitOrientation>(
         valueListenable: DioNetworkInspector.instance.splitOrientation,
         builder: (context, splitOrientation, _) {
@@ -285,7 +297,7 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
             position: PopupMenuPosition.under,
             offset: const Offset(0, 4),
             constraints: const BoxConstraints(minWidth: 176),
-            color: InspectorColors.background,
+            color: colors.background,
             elevation: 6,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(InspectorDimensions.radiusXl),
@@ -328,12 +340,12 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
                 icon: splitIcon,
               ),
             ],
-            child: const Padding(
-              padding: EdgeInsets.all(6),
+            child: Padding(
+              padding: const EdgeInsets.all(6),
               child: Icon(
                 Icons.more_vert,
                 size: 20,
-                color: InspectorColors.textBlueGrey,
+                color: colors.textBlueGrey,
               ),
             ),
           );
@@ -351,18 +363,19 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
     )?.showSnackBar(const SnackBar(content: Text('JSON copied to clipboard')));
   }
 
-  static final _summaryButtonStyle = OutlinedButton.styleFrom(
-    minimumSize: const Size(0, 30),
-    padding: const EdgeInsets.symmetric(
-      horizontal: InspectorDimensions.spacingM,
-    ),
-    foregroundColor: InspectorColors.textBlueGrey,
-    textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-    side: const BorderSide(color: InspectorColors.divider),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(InspectorDimensions.radiusM),
-    ),
-  );
+  static ButtonStyle _summaryButtonStyle(InspectorColorsData colors) =>
+      OutlinedButton.styleFrom(
+        minimumSize: const Size(0, 30),
+        padding: const EdgeInsets.symmetric(
+          horizontal: InspectorDimensions.spacingM,
+        ),
+        foregroundColor: colors.textBlueGrey,
+        textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+        side: BorderSide(color: colors.divider),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(InspectorDimensions.radiusM),
+        ),
+      );
 
   Future<void> _replayRequest() async {
     final request = widget.request;
@@ -403,6 +416,7 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
   }
 
   Widget _buildTab(String title, int index, int selectedIndex) {
+    final colors = InspectorColors.of(context);
     final isSelected = selectedIndex == index;
     final primaryColor = Theme.of(context).colorScheme.primary;
 
@@ -427,8 +441,8 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
               ? InspectorTypography.body.copyWith(fontWeight: FontWeight.bold)
               : InspectorTypography.body,
           color: isSelected
-              ? InspectorColors.textPrimary
-              : InspectorColors.textSecondary,
+              ? colors.textPrimary
+              : colors.textSecondary,
         ),
       ),
     );
@@ -439,6 +453,7 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
     List<String> tabs,
     int selectedIndex,
   ) {
+    final colors = InspectorColors.of(context);
     final isSelectedHidden = hiddenTabs.contains(selectedIndex);
     final primaryColor = Theme.of(context).colorScheme.primary;
 
@@ -452,7 +467,7 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
         position: PopupMenuPosition.under,
         offset: const Offset(0, 4),
         constraints: const BoxConstraints(minWidth: 176),
-        color: InspectorColors.background,
+        color: colors.background,
         elevation: 6,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(InspectorDimensions.radiusXl),
@@ -485,8 +500,8 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
             Icons.keyboard_double_arrow_right,
             size: InspectorDimensions.iconM,
             color: isSelectedHidden
-                ? InspectorColors.textPrimary
-                : InspectorColors.textSecondary,
+                ? colors.textPrimary
+                : colors.textSecondary,
           ),
         ),
       ),
@@ -538,9 +553,11 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
         final hasBody = req.requestData != null;
 
         if (!hasQuery && !hasBody) {
-          return const BaseText(
-            'No payload data',
-            color: InspectorColors.textSecondary,
+          return Builder(
+            builder: (context) => BaseText(
+              'No payload data',
+              color: InspectorColors.of(context).textSecondary,
+            ),
           );
         }
 
@@ -577,9 +594,11 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
         );
       case 2: // Preview (Raw JSON Viewer)
         if (req.responseData == null) {
-          return const BaseText(
-            'No response data',
-            color: InspectorColors.textSecondary,
+          return Builder(
+            builder: (context) => BaseText(
+              'No response data',
+              color: InspectorColors.of(context).textSecondary,
+            ),
           );
         }
         return JsonViewerWidget(
@@ -589,9 +608,11 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
         );
       case 3: // Response
         if (req.responseData == null) {
-          return const BaseText(
-            'No response data',
-            color: InspectorColors.textSecondary,
+          return Builder(
+            builder: (context) => BaseText(
+              'No response data',
+              color: InspectorColors.of(context).textSecondary,
+            ),
           );
         }
         return JsonViewerWidget(
