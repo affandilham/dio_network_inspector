@@ -1,33 +1,55 @@
-import 'package:dio_network_inspector/src/features/database/query_tabs_controller.dart';
+import 'package:dio_network_inspector/src/features/database/domain/query_tabs_controller.dart';
+import 'package:dio_network_inspector/src/features/database/domain/database_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('new tabs keep independent drafts and select the new tab', () {
-    final tabs = QueryTabsController();
-    tabs.updateActiveDraft('SELECT * FROM users');
+  test('renames an existing query tab', () {
+    final controller = QueryTabsController();
+    final tab = controller.active;
 
-    final second = tabs.createTab();
-    tabs.updateActiveDraft('SHOW TABLES');
-
-    expect(tabs.tabs, hasLength(2));
-    expect(tabs.active.id, second.id);
-    expect(tabs.tabs.first.draft, 'SELECT * FROM users');
-    expect(tabs.active.draft, 'SHOW TABLES');
+    expect(controller.rename(tab.id, 'Users lookup'), isTrue);
+    expect(controller.active.name, 'Users lookup');
   });
 
-  test('closing the active tab selects a neighbouring tab', () {
-    final tabs = QueryTabsController();
-    final second = tabs.createTab();
+  test('rejects blank names and unknown tabs', () {
+    final controller = QueryTabsController();
 
-    expect(tabs.close(second.id), isTrue);
-    expect(tabs.tabs, hasLength(1));
-    expect(tabs.active.name, 'Query 1');
+    expect(controller.rename(controller.active.id, '  '), isFalse);
+    expect(controller.rename('missing', 'Other'), isFalse);
+    expect(controller.active.name, 'Query 1');
   });
 
-  test('the final tab is kept open', () {
-    final tabs = QueryTabsController();
+  test('evicts inactive result pages while keeping their drafts', () {
+    final controller = QueryTabsController();
+    controller.updateActiveDraft('SELECT * FROM users');
+    controller.updateActiveResult(
+      const DatabasePage(
+        columns: [],
+        rows: [],
+        offset: 0,
+        limit: 50,
+        hasMore: false,
+      ),
+    );
+    final firstTab = controller.active;
 
-    expect(tabs.close(tabs.active.id), isFalse);
-    expect(tabs.tabs, hasLength(1));
+    controller.createTab();
+
+    expect(controller.evictInactiveResults(), isTrue);
+    expect(firstTab.draft, 'SELECT * FROM users');
+    expect(firstTab.result, isNull);
+    expect(firstTab.resultWasEvicted, isTrue);
+  });
+
+  test('reuses the first available default name after a tab is closed', () {
+    final controller = QueryTabsController();
+    final second = controller.createTab();
+    controller.createTab();
+
+    expect(controller.close(second.id), isTrue);
+    final replacement = controller.createTab();
+
+    expect(replacement.name, 'Query 2');
+    expect(replacement.id, isNot(second.id));
   });
 }

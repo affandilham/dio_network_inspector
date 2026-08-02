@@ -1,4 +1,4 @@
-import 'database_models.dart';
+import '../database_models.dart';
 
 /// Conservative guard for the inspector SQL editor.
 ///

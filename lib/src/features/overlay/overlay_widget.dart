@@ -11,7 +11,7 @@ import '../../components/base_text.dart';
 import '../../components/base_icon_button.dart';
 import '../../components/base_container.dart';
 import '../../dio_network_inspector.dart';
-import '../database/database_models.dart';
+import '../database/domain/database_models.dart';
 
 class DioInspectorOverlay extends StatefulWidget {
   final Widget child;
@@ -159,6 +159,19 @@ class _DioInspectorOverlayState extends State<DioInspectorOverlay> {
                         _windowContentController.setDatabaseOpen(!isOpen),
                   ),
                 ),
+              ValueListenableBuilder<bool>(
+                valueListenable: DioNetworkInspector.instance.isSettingsOpen,
+                builder: (context, isOpen, _) => BaseIconButton(
+                  icon: Icons.settings_outlined,
+                  color: isOpen
+                      ? InspectorColors.primary
+                      : InspectorColors.textSecondary,
+                  size: InspectorDimensions.iconM,
+                  tooltip: 'Inspector settings',
+                  onPressed: () =>
+                      _windowContentController.setSettingsOpen(!isOpen),
+                ),
+              ),
               BaseIconButton(
                 icon: Icons.file_upload_outlined,
                 color: InspectorColors.textSecondary,

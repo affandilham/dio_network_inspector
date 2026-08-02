@@ -1,4 +1,4 @@
-import 'package:dio_network_inspector/src/features/database/mysql_database_client.dart';
+import 'package:dio_network_inspector/src/features/database/data/mysql_database_client.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -23,6 +23,14 @@ void main() {
 
     test('returns an empty list for a non-enum type', () {
       expect(MySqlDatabaseClient.parseEnumValues('varchar(255)'), isEmpty);
+    });
+  });
+
+  group('MySqlDatabaseClient.displayColumnType', () {
+    test('uses human-readable labels for MySQL protocol types', () {
+      expect(MySqlDatabaseClient.displayColumnType(8), 'BIGINT');
+      expect(MySqlDatabaseClient.displayColumnType(12), 'DATETIME');
+      expect(MySqlDatabaseClient.displayColumnType(253), 'VARCHAR');
     });
   });
 }

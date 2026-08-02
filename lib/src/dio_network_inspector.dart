@@ -1,7 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'models/network_request.dart';
-import 'features/database/database_models.dart';
+import 'core/settings/inspector_settings.dart';
+import 'features/database/domain/database_models.dart';
 
 class DioNetworkInspector {
   static final DioNetworkInspector _instance = DioNetworkInspector._internal();
@@ -14,6 +15,10 @@ class DioNetworkInspector {
   final ValueNotifier<bool> isRecording = ValueNotifier(true);
   final ValueNotifier<bool> isNotesOpen = ValueNotifier(false);
   final ValueNotifier<bool> isDatabaseOpen = ValueNotifier(false);
+  final ValueNotifier<bool> isSettingsOpen = ValueNotifier(false);
+  final ValueNotifier<InspectorSettings> settings = ValueNotifier(
+    const InspectorSettings(),
+  );
   MySqlInspectorConfig? databaseConfig;
   static const int maxRequests = 200;
 
@@ -52,6 +57,11 @@ class DioNetworkInspector {
   void configureDatabase(MySqlInspectorConfig? config) {
     databaseConfig = config;
     if (config == null) isDatabaseOpen.value = false;
+  }
+
+  /// Updates in-memory preferences shared by every inspector feature.
+  void updateSettings(InspectorSettings updatedSettings) {
+    settings.value = updatedSettings;
   }
 
   String exportSession() => jsonEncode({

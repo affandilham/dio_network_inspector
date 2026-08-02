@@ -34,6 +34,19 @@ void main() {
     expect(DioNetworkInspector.instance.isDatabaseOpen.value, isTrue);
   });
 
+  test('opening settings closes notes and database inspector', () {
+    final controller = WindowContentController()..init();
+
+    controller.setNotesOpen(true);
+    controller.setDatabaseOpen(true);
+    controller.setSettingsOpen(true);
+
+    expect(DioNetworkInspector.instance.isSettingsOpen.value, isTrue);
+    expect(DioNetworkInspector.instance.isNotesOpen.value, isFalse);
+    expect(DioNetworkInspector.instance.isDatabaseOpen.value, isFalse);
+    controller.disposeController();
+  });
+
   testWidgets('hides the database button without a database config', (
     tester,
   ) async {

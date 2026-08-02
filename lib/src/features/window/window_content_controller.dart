@@ -7,12 +7,14 @@ class WindowContentStateData {
   final double? leftPaneWidth;
   final bool isNotesOpen;
   final bool isDatabaseOpen;
+  final bool isSettingsOpen;
 
   WindowContentStateData({
     this.selectedRequest,
     this.leftPaneWidth,
     this.isNotesOpen = false,
     this.isDatabaseOpen = false,
+    this.isSettingsOpen = false,
   });
 
   WindowContentStateData copyWith({
@@ -21,6 +23,7 @@ class WindowContentStateData {
     double? leftPaneWidth,
     bool? isNotesOpen,
     bool? isDatabaseOpen,
+    bool? isSettingsOpen,
   }) {
     return WindowContentStateData(
       selectedRequest: clearSelectedRequest
@@ -29,6 +32,7 @@ class WindowContentStateData {
       leftPaneWidth: leftPaneWidth ?? this.leftPaneWidth,
       isNotesOpen: isNotesOpen ?? this.isNotesOpen,
       isDatabaseOpen: isDatabaseOpen ?? this.isDatabaseOpen,
+      isSettingsOpen: isSettingsOpen ?? this.isSettingsOpen,
     );
   }
 }
@@ -42,6 +46,7 @@ class WindowContentController
     DioNetworkInspector.instance.requests.addListener(_onRequestsChanged);
     DioNetworkInspector.instance.isNotesOpen.addListener(_onNotesChanged);
     DioNetworkInspector.instance.isDatabaseOpen.addListener(_onDatabaseChanged);
+    DioNetworkInspector.instance.isSettingsOpen.addListener(_onSettingsChanged);
   }
 
   @override
@@ -50,6 +55,9 @@ class WindowContentController
     DioNetworkInspector.instance.isNotesOpen.removeListener(_onNotesChanged);
     DioNetworkInspector.instance.isDatabaseOpen.removeListener(
       _onDatabaseChanged,
+    );
+    DioNetworkInspector.instance.isSettingsOpen.removeListener(
+      _onSettingsChanged,
     );
     super.disposeController();
   }
@@ -62,6 +70,10 @@ class WindowContentController
     isDatabaseOpen: DioNetworkInspector.instance.isDatabaseOpen.value,
   );
 
+  void _onSettingsChanged() => value = value.copyWith(
+    isSettingsOpen: DioNetworkInspector.instance.isSettingsOpen.value,
+  );
+
   void _onRequestsChanged() {
     if (DioNetworkInspector.instance.requests.value.isEmpty &&
         value.selectedRequest != null) {
@@ -72,6 +84,7 @@ class WindowContentController
   void selectRequest(NetworkRequest? req) {
     DioNetworkInspector.instance.isNotesOpen.value = false;
     DioNetworkInspector.instance.isDatabaseOpen.value = false;
+    DioNetworkInspector.instance.isSettingsOpen.value = false;
     value = value.copyWith(
       selectedRequest: req,
       clearSelectedRequest: req == null,
@@ -80,12 +93,24 @@ class WindowContentController
 
   void setNotesOpen(bool open) {
     DioNetworkInspector.instance.isNotesOpen.value = open;
-    if (open) DioNetworkInspector.instance.isDatabaseOpen.value = false;
+    if (open) {
+      DioNetworkInspector.instance.isDatabaseOpen.value = false;
+      DioNetworkInspector.instance.isSettingsOpen.value = false;
+    }
   }
 
   void setDatabaseOpen(bool open) {
     DioNetworkInspector.instance.isNotesOpen.value = false;
     DioNetworkInspector.instance.isDatabaseOpen.value = open;
+    if (open) DioNetworkInspector.instance.isSettingsOpen.value = false;
+  }
+
+  void setSettingsOpen(bool open) {
+    DioNetworkInspector.instance.isSettingsOpen.value = open;
+    if (open) {
+      DioNetworkInspector.instance.isNotesOpen.value = false;
+      DioNetworkInspector.instance.isDatabaseOpen.value = false;
+    }
   }
 
   void updateLeftPaneWidth(double dx, double maxWidth) {

@@ -16,6 +16,7 @@ class MySqlInspectorConfig {
     this.pageSize = 50,
     this.maxPageSize = 100,
     this.connectTimeout = const Duration(seconds: 10),
+    this.executionTimeout = const Duration(seconds: 30),
   });
 
   final String host;
@@ -28,6 +29,7 @@ class MySqlInspectorConfig {
   final int pageSize;
   final int maxPageSize;
   final Duration connectTimeout;
+  final Duration executionTimeout;
 
   String? get validationError {
     if (host.trim().isEmpty) return 'Database host is required.';
@@ -39,6 +41,9 @@ class MySqlInspectorConfig {
     }
     if (pageSize > maxPageSize) {
       return 'Page size cannot exceed the maximum page size.';
+    }
+    if (executionTimeout <= Duration.zero) {
+      return 'Execution timeout must be greater than zero.';
     }
     return null;
   }
@@ -52,6 +57,13 @@ class DatabaseTable {
 
   final String name;
   final String? type;
+}
+
+class DatabaseKeyword {
+  const DatabaseKeyword({required this.word, required this.isReserved});
+
+  final String word;
+  final bool isReserved;
 }
 
 class DatabaseColumn {
@@ -68,21 +80,65 @@ class DatabaseColumn {
   final List<String> enumValues;
 }
 
-/// A read-only filter created from known table metadata.
+/// A validated schema relationship discovered from MySQL metadata.
 ///
-/// The client quotes [column] as an identifier and binds [value] as a query
-/// parameter. It is not built from arbitrary SQL entered by the user.
-class DatabaseTableFilter {
-  const DatabaseTableFilter.equals({required this.column, required this.value})
-    : matchesNull = false;
+/// It is metadata only; [DatabaseForeignKey] never contains a row value or
+/// credentials. The controller uses it solely to prepare a read-only query.
+class DatabaseForeignKey {
+  const DatabaseForeignKey({
+    required this.table,
+    required this.column,
+    required this.referencedTable,
+    required this.referencedColumn,
+    this.constraintName = '',
+    this.ordinalPosition = 1,
+    this.onUpdate,
+    this.onDelete,
+  });
 
-  const DatabaseTableFilter.isNull({required this.column})
-    : value = null,
-      matchesNull = true;
-
+  final String table;
   final String column;
-  final String? value;
-  final bool matchesNull;
+  final String referencedTable;
+  final String referencedColumn;
+
+  /// MySQL constraint that groups the columns of a composite foreign key.
+  ///
+  /// Older/custom clients may not expose it; those relations intentionally
+  /// retain single-column behaviour.
+  final String constraintName;
+  final int ordinalPosition;
+  final String? onUpdate;
+  final String? onDelete;
+}
+
+/// Read-only metadata for one MySQL index and its ordered columns.
+class DatabaseTableIndex {
+  const DatabaseTableIndex({
+    required this.name,
+    required this.isUnique,
+    required this.type,
+    required this.columns,
+  });
+
+  final String name;
+  final bool isUnique;
+  final String type;
+  final List<String> columns;
+}
+
+/// Read-only metadata for one trigger declared on a MySQL table.
+class DatabaseTableTrigger {
+  const DatabaseTableTrigger({
+    required this.name,
+    required this.timing,
+    required this.event,
+    required this.statement,
+  });
+
+  final String name;
+  final String timing;
+  final String event;
+  final String statement;
 }
 
 class DatabasePage {

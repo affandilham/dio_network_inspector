@@ -1,4 +1,4 @@
-import 'package:dio_network_inspector/src/features/database/read_only_sql_validator.dart';
+import 'package:dio_network_inspector/src/features/database/domain/sql/read_only_sql_validator.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
