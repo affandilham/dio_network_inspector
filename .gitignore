@@ -31,3 +31,6 @@ migrate_working_dir/
 /build/
 /coverage/
 .superdesign/
+
+# Local AI coding-agent guidance
+/AGENTS.md
