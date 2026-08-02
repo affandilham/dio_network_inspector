@@ -123,6 +123,19 @@ class DatabaseQueryWorkspaceController
     value = value.copyWith(isDismissed: true);
   }
 
+  void deleteSelected() {
+    final editingValue = queryController.value;
+    final selection = editingValue.selection;
+    if (!selection.isValid || selection.isCollapsed) return;
+    final start = selection.start;
+    final end = selection.end;
+    queryController.value = editingValue.copyWith(
+      text: editingValue.text.replaceRange(start, end, ''),
+      selection: TextSelection.collapsed(offset: start),
+      composing: TextRange.empty,
+    );
+  }
+
   void insertLineBreak() {
     final editingValue = queryController.value;
     final selection = editingValue.selection;

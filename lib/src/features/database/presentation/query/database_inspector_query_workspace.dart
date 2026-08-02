@@ -95,7 +95,17 @@ class _DatabaseInspectorQueryWorkspaceState
       }
       return true;
     }
-    if (!state.hasSuggestions) return false;
+    if (!state.hasSuggestions) {
+      if (_isDeleteWithSelection(event)) {
+        _workspace.deleteSelected();
+        return true;
+      }
+      return false;
+    }
+    if (_isDeleteWithSelection(event)) {
+      _workspace.deleteSelected();
+      return true;
+    }
     switch (event.logicalKey) {
       case LogicalKeyboardKey.arrowDown:
         _moveHighlight(1);
@@ -118,6 +128,15 @@ class _DatabaseInspectorQueryWorkspaceState
         return true;
     }
     return false;
+  }
+
+  bool _isDeleteWithSelection(KeyEvent event) {
+    final key = event.logicalKey;
+    if (key != LogicalKeyboardKey.delete && key != LogicalKeyboardKey.backspace) {
+      return false;
+    }
+    final selection = _workspace.queryController.selection;
+    return selection.isValid && !selection.isCollapsed;
   }
 
   bool _isRunShortcut(KeyEvent event) =>
