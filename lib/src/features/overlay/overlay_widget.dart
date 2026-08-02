@@ -11,10 +11,13 @@ import '../../components/base_text.dart';
 import '../../components/base_icon_button.dart';
 import '../../components/base_container.dart';
 import '../../dio_network_inspector.dart';
+import '../database/domain/database_models.dart';
 
 class DioInspectorOverlay extends StatefulWidget {
   final Widget child;
   final GlobalKey<NavigatorState>? navigatorKey;
+  final MySqlInspectorConfig? databaseConfig;
+
   /// Optional theme override for the inspector panel.
   /// When null, the inspector follows [DioNetworkInspector.instance.themeMode],
   /// which defaults to [ThemeMode.system] (auto-follows the host app).
@@ -24,6 +27,7 @@ class DioInspectorOverlay extends StatefulWidget {
     super.key,
     required this.child,
     this.navigatorKey,
+    this.databaseConfig,
     this.themeMode,
   });
 
@@ -61,6 +65,7 @@ class _DioInspectorOverlayState extends State<DioInspectorOverlay> {
     super.initState();
     _controller = OverlayController();
     _windowContentController = WindowContentController()..init();
+    DioNetworkInspector.instance.configureDatabase(widget.databaseConfig);
   }
 
   @override
@@ -91,8 +96,12 @@ class _DioInspectorOverlayState extends State<DioInspectorOverlay> {
                 builder: (context, isOpen, _) => Tooltip(
                   message: 'Toggle Sidebar (⌘/Ctrl+B)',
                   child: InkWell(
-                    borderRadius: BorderRadius.circular(InspectorDimensions.radiusM),
-                    onTap: () => DioNetworkInspector.instance.isSidePaneOpen.value = !isOpen,
+                    borderRadius: BorderRadius.circular(
+                      InspectorDimensions.radiusM,
+                    ),
+                    onTap: () =>
+                        DioNetworkInspector.instance.isSidePaneOpen.value =
+                            !isOpen,
                     child: Padding(
                       padding: const EdgeInsets.all(4.0),
                       child: Icon(
@@ -164,26 +173,46 @@ class _DioInspectorOverlayState extends State<DioInspectorOverlay> {
                 valueListenable: DioNetworkInspector.instance.isUrlTesterOpen,
                 builder: (context, isOpen, _) => BaseIconButton(
                   icon: Icons.language,
-                  color: isOpen
-                      ? colors.primary
-                      : colors.textSecondary,
+                  color: isOpen ? colors.primary : colors.textSecondary,
                   size: InspectorDimensions.iconM,
                   tooltip: 'URL Tester',
                   onPressed: () =>
-                      DioNetworkInspector.instance.isUrlTesterOpen.value = !isOpen,
+                      DioNetworkInspector.instance.isUrlTesterOpen.value =
+                          !isOpen,
                 ),
               ),
               ValueListenableBuilder<bool>(
                 valueListenable: DioNetworkInspector.instance.isNotesOpen,
                 builder: (context, isOpen, _) => BaseIconButton(
                   icon: Icons.sticky_note_2_outlined,
-                  color: isOpen
-                      ? colors.primary
-                      : colors.textSecondary,
+                  color: isOpen ? colors.primary : colors.textSecondary,
                   size: InspectorDimensions.iconM,
                   tooltip: 'Notes',
                   onPressed: () =>
-                      DioNetworkInspector.instance.isNotesOpen.value = !isOpen,
+                      _windowContentController.setNotesOpen(!isOpen),
+                ),
+              ),
+              if (widget.databaseConfig != null)
+                ValueListenableBuilder<bool>(
+                  valueListenable: DioNetworkInspector.instance.isDatabaseOpen,
+                  builder: (context, isOpen, _) => BaseIconButton(
+                    icon: Icons.storage_outlined,
+                    color: isOpen ? colors.primary : colors.textSecondary,
+                    size: InspectorDimensions.iconM,
+                    tooltip: 'Database Inspector',
+                    onPressed: () =>
+                        _windowContentController.setDatabaseOpen(!isOpen),
+                  ),
+                ),
+              ValueListenableBuilder<bool>(
+                valueListenable: DioNetworkInspector.instance.isSettingsOpen,
+                builder: (context, isOpen, _) => BaseIconButton(
+                  icon: Icons.settings_outlined,
+                  color: isOpen ? colors.primary : colors.textSecondary,
+                  size: InspectorDimensions.iconM,
+                  tooltip: 'Inspector settings',
+                  onPressed: () =>
+                      _windowContentController.setSettingsOpen(!isOpen),
                 ),
               ),
               BaseIconButton(

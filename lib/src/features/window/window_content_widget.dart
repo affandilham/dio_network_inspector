@@ -3,6 +3,8 @@ import 'window_content_controller.dart';
 import '../request_list/request_list_widget.dart';
 import '../request_detail/detail_pane_widget.dart';
 import '../notes/notes_pane_widget.dart';
+import '../database/presentation/database_inspector_widget.dart';
+import '../settings/inspector_settings_pane_widget.dart';
 import '../url_tester/url_tester_widget.dart';
 import '../../models/split_orientation.dart';
 
@@ -60,9 +62,12 @@ class _InspectorWindowContentWidgetState
                     });
                   }
 
-                  bool rightPaneActive = state.selectedRequest != null ||
+                  final rightPaneActive =
+                      state.selectedRequest != null ||
                       state.isNotesOpen ||
-                      state.isUrlTesterOpen;
+                      state.isUrlTesterOpen ||
+                      state.isDatabaseOpen ||
+                      state.isSettingsOpen;
 
                   if (constraints.maxWidth < 200 || !rightPaneActive) {
                     return InspectorRequestListWidget(
@@ -72,17 +77,7 @@ class _InspectorWindowContentWidgetState
                   }
 
                   if (!state.isSidePaneOpen) {
-                    return Expanded(
-                      child: state.isUrlTesterOpen
-                          ? const InspectorUrlTesterWidget()
-                          : state.isNotesOpen
-                              ? const InspectorNotesPaneWidget()
-                              : InspectorDetailPaneWidget(
-                                  request: state.selectedRequest!,
-                                  onClose: () =>
-                                      _controller.selectRequest(null),
-                                ),
-                    );
+                    return _buildActivePane(state);
                   }
 
                   final isBottom =
@@ -94,12 +89,9 @@ class _InspectorWindowContentWidgetState
                       children: [
                         // Top Pane: Request List
                         SizedBox(
-                          height: (state.topPaneHeight ??
-                                  constraints.maxHeight / 2)
-                              .clamp(
-                            100.0,
-                            constraints.maxHeight - 100.0,
-                          ),
+                          height:
+                              (state.topPaneHeight ?? constraints.maxHeight / 2)
+                                  .clamp(100.0, constraints.maxHeight - 100.0),
                           child: InspectorRequestListWidget(
                             selectedRequest: state.selectedRequest,
                             onSelected: _controller.selectRequest,
@@ -118,25 +110,11 @@ class _InspectorWindowContentWidgetState
                             child: Container(
                               height: 8,
                               color: Colors.transparent,
-                              child: const Divider(
-                                height: 1,
-                                thickness: 1,
-                              ),
+                              child: const Divider(height: 1, thickness: 1),
                             ),
                           ),
                         ),
-                        // Bottom Pane: Request details, global notes panel, or url tester.
-                        Expanded(
-                          child: state.isUrlTesterOpen
-                              ? const InspectorUrlTesterWidget()
-                              : state.isNotesOpen
-                                  ? const InspectorNotesPaneWidget()
-                                  : InspectorDetailPaneWidget(
-                                      request: state.selectedRequest!,
-                                      onClose: () =>
-                                          _controller.selectRequest(null),
-                                    ),
-                        ),
+                        Expanded(child: _buildActivePane(state)),
                       ],
                     );
                   }
@@ -146,12 +124,8 @@ class _InspectorWindowContentWidgetState
                     children: [
                       // Left Pane: Request List
                       SizedBox(
-                        width: (state.leftPaneWidth ??
-                                constraints.maxWidth / 3)
-                            .clamp(
-                          100.0,
-                          constraints.maxWidth - 100.0,
-                        ),
+                        width: (state.leftPaneWidth ?? constraints.maxWidth / 3)
+                            .clamp(100.0, constraints.maxWidth - 100.0),
                         child: InspectorRequestListWidget(
                           selectedRequest: state.selectedRequest,
                           onSelected: _controller.selectRequest,
@@ -177,18 +151,7 @@ class _InspectorWindowContentWidgetState
                           ),
                         ),
                       ),
-                      // Right Pane: Request details, global notes panel, or url tester.
-                      Expanded(
-                        child: state.isUrlTesterOpen
-                            ? const InspectorUrlTesterWidget()
-                            : state.isNotesOpen
-                                ? const InspectorNotesPaneWidget()
-                                : InspectorDetailPaneWidget(
-                                    request: state.selectedRequest!,
-                                    onClose: () =>
-                                        _controller.selectRequest(null),
-                                  ),
-                      ),
+                      Expanded(child: _buildActivePane(state)),
                     ],
                   );
                 },
@@ -197,6 +160,17 @@ class _InspectorWindowContentWidgetState
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildActivePane(WindowContentStateData state) {
+    if (state.isUrlTesterOpen) return const InspectorUrlTesterWidget();
+    if (state.isNotesOpen) return const InspectorNotesPaneWidget();
+    if (state.isDatabaseOpen) return const InspectorDatabasePaneWidget();
+    if (state.isSettingsOpen) return const InspectorSettingsPaneWidget();
+    return InspectorDetailPaneWidget(
+      request: state.selectedRequest!,
+      onClose: () => _controller.selectRequest(null),
     );
   }
 }

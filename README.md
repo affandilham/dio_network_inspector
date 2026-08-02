@@ -25,6 +25,34 @@ Lakukan langkah berikut dari root proyek Flutter target.
    - Tambahkan `DioNetworkInterceptor()` ke instance `Dio`.
    - Bungkus aplikasi dengan `DioInspectorOverlay`.
 
+### Database Inspector MySQL (opsional)
+
+Untuk debugging database tanpa membuka TablePlus, berikan konfigurasi MySQL
+read-only kepada overlay. Konfigurasi ini hidup hanya di memori; jangan isi
+nilainya langsung di source code atau commit file environment lokal.
+
+~~~dart
+DioInspectorOverlay(
+  databaseConfig: MySqlInspectorConfig(
+    host: const String.fromEnvironment('INSPECTOR_MYSQL_HOST'),
+    port: int.fromEnvironment('INSPECTOR_MYSQL_PORT', defaultValue: 3306),
+    database: const String.fromEnvironment('INSPECTOR_MYSQL_DATABASE'),
+    username: const String.fromEnvironment('INSPECTOR_MYSQL_USERNAME'),
+    password: const String.fromEnvironment('INSPECTOR_MYSQL_PASSWORD'),
+    sslMode: MySqlSslMode.preferred,
+    environmentLabel: 'development',
+  ),
+  child: const VoltunesApp(),
+)
+~~~
+
+Pada overlay, tekan ikon database lalu **Connect**. Koneksi belum dibuat
+sebelum tombol tersebut ditekan, dan otomatis ditutup ketika panel Database
+ditutup. Panel saat ini menampilkan tabel, row ber-pagination, dan menjalankan
+SQL read-only. Perintah tulis, transaction, lock, multi-statement, file output,
+dan SELECT yang mengunci row diblokir oleh UI. Tetap gunakan user MySQL khusus
+yang hanya diberi hak baca; guard UI bukan pengganti permission database.
+
 3. Konfigurasikan perintah lokal sesuai sistem operasi di bagian berikut.
 
 4. Rekam patch. Sebaiknya sebutkan file integrasi agar perubahan pekerjaan lain tidak ikut:

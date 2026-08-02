@@ -121,6 +121,7 @@ class InspectorColors {
   static const Color background = Color(0xFFFCFCFC);
   static const Color surface = Color(0xFFF8FAFC);
   static const Color surfaceDark = Color(0xFFF1F5F9);
+  static const Color activeStatementHighlight = Color(0xFFFFFB00);
 
   static const Color textPrimary = Color(0xFF1F2937);
   static const Color textSecondary = Color(0xFF6B7280);
@@ -131,6 +132,7 @@ class InspectorColors {
   static const Color success = Color(0xFF15803D);
   static const Color error = Color(0xFFDC2626);
   static const Color warning = Color(0xFFB45309);
+  static const Color foreignKey = Color(0xFFD4A72C);
 
   static const Color jsonKey = Color(0xFF334155);
   static const Color jsonString = Color(0xFFB45309);

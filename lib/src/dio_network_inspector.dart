@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show ThemeMode;
 import 'dart:convert';
 import 'models/network_request.dart';
+import 'core/settings/inspector_settings.dart';
+import 'features/database/domain/database_models.dart';
 import 'models/split_orientation.dart';
 
 class DioNetworkInspector {
@@ -14,10 +16,17 @@ class DioNetworkInspector {
   final ValueNotifier<List<NetworkRequest>> requests = ValueNotifier([]);
   final ValueNotifier<bool> isRecording = ValueNotifier(true);
   final ValueNotifier<bool> isNotesOpen = ValueNotifier(false);
+  final ValueNotifier<bool> isDatabaseOpen = ValueNotifier(false);
+  final ValueNotifier<bool> isSettingsOpen = ValueNotifier(false);
+  final ValueNotifier<InspectorSettings> settings = ValueNotifier(
+    const InspectorSettings(),
+  );
+  MySqlInspectorConfig? databaseConfig;
   final ValueNotifier<bool> isUrlTesterOpen = ValueNotifier(false);
   final ValueNotifier<bool> isSidePaneOpen = ValueNotifier(true);
-  final ValueNotifier<SplitOrientation> splitOrientation =
-      ValueNotifier(SplitOrientation.side);
+  final ValueNotifier<SplitOrientation> splitOrientation = ValueNotifier(
+    SplitOrientation.side,
+  );
 
   /// Controls the inspector UI's theme. Defaults to [ThemeMode.system] which
   /// automatically follows the host application's theme.
@@ -56,6 +65,20 @@ class DioNetworkInspector {
 
   void clear() {
     requests.value = [];
+  }
+
+  /// Sets an in-memory database configuration supplied by the host app.
+  ///
+  /// The inspector deliberately does not persist this value or add it to
+  /// exported sessions.
+  void configureDatabase(MySqlInspectorConfig? config) {
+    databaseConfig = config;
+    if (config == null) isDatabaseOpen.value = false;
+  }
+
+  /// Updates in-memory preferences shared by every inspector feature.
+  void updateSettings(InspectorSettings updatedSettings) {
+    settings.value = updatedSettings;
   }
 
   String exportSession() => jsonEncode({

@@ -1,0 +1,3 @@
+tags:
+  mysql-integration:
+    description: Tests that require an explicitly enabled local MySQL fixture.
