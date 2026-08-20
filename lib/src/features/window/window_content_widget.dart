@@ -7,6 +7,7 @@ import '../database/presentation/database_inspector_widget.dart';
 import '../settings/inspector_settings_pane_widget.dart';
 import '../url_tester/url_tester_widget.dart';
 import '../../models/split_orientation.dart';
+import '../../core/theme/inspector_dimensions.dart';
 
 class InspectorWindowContentWidget extends StatefulWidget {
   final WindowContentController? controller;
@@ -80,18 +81,29 @@ class _InspectorWindowContentWidgetState
                     return _buildActivePane(state);
                   }
 
+                  final isSmallScreen =
+                      constraints.maxWidth < InspectorDimensions.smallScreenThreshold;
                   final isBottom =
+                      isSmallScreen ||
                       state.splitOrientation == SplitOrientation.bottom;
 
                   if (isBottom) {
+                    final maxPaneHeight = constraints.maxHeight > 200.0
+                        ? constraints.maxHeight - 100.0
+                        : constraints.maxHeight * 0.8;
+                    final minPaneHeight = constraints.maxHeight > 200.0
+                        ? 100.0
+                        : constraints.maxHeight * 0.2;
+                    final paneHeight =
+                        (state.topPaneHeight ?? constraints.maxHeight / 2)
+                            .clamp(minPaneHeight, maxPaneHeight);
+
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         // Top Pane: Request List
                         SizedBox(
-                          height:
-                              (state.topPaneHeight ?? constraints.maxHeight / 2)
-                                  .clamp(100.0, constraints.maxHeight - 100.0),
+                          height: paneHeight,
                           child: InspectorRequestListWidget(
                             selectedRequest: state.selectedRequest,
                             onSelected: _controller.selectRequest,
@@ -119,13 +131,22 @@ class _InspectorWindowContentWidgetState
                     );
                   }
 
+                  final maxPaneWidth = constraints.maxWidth > 200.0
+                      ? constraints.maxWidth - 100.0
+                      : constraints.maxWidth * 0.8;
+                  final minPaneWidth = constraints.maxWidth > 200.0
+                      ? 100.0
+                      : constraints.maxWidth * 0.2;
+                  final paneWidth =
+                      (state.leftPaneWidth ?? constraints.maxWidth / 3)
+                          .clamp(minPaneWidth, maxPaneWidth);
+
                   return Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       // Left Pane: Request List
                       SizedBox(
-                        width: (state.leftPaneWidth ?? constraints.maxWidth / 3)
-                            .clamp(100.0, constraints.maxWidth - 100.0),
+                        width: paneWidth,
                         child: InspectorRequestListWidget(
                           selectedRequest: state.selectedRequest,
                           onSelected: _controller.selectRequest,
