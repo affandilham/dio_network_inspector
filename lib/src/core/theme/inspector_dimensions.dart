@@ -19,4 +19,5 @@ class InspectorDimensions {
   static const double minWindowWidth = 250.0;
   static const double minWindowHeight = 300.0;
   static const double handleSize = 6.0;
+  static const double smallScreenThreshold = 600.0;
 }

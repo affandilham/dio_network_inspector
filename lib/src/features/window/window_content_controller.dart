@@ -184,11 +184,12 @@ class WindowContentController
 
   void updateLeftPaneWidth(double dx, double maxWidth) {
     if (value.leftPaneWidth != null) {
-      double newWidth = (value.leftPaneWidth! + dx).clamp(
-        100.0,
-        maxWidth - 100.0,
-      );
-      value = value.copyWith(leftPaneWidth: newWidth);
+      final minW = maxWidth > 200.0 ? 100.0 : maxWidth * 0.2;
+      final maxW = maxWidth > 200.0 ? maxWidth - 100.0 : maxWidth * 0.8;
+      if (minW <= maxW) {
+        double newWidth = (value.leftPaneWidth! + dx).clamp(minW, maxW);
+        value = value.copyWith(leftPaneWidth: newWidth);
+      }
     }
   }
 
@@ -198,11 +199,12 @@ class WindowContentController
 
   void updateTopPaneHeight(double dy, double maxHeight) {
     if (value.topPaneHeight != null) {
-      double newHeight = (value.topPaneHeight! + dy).clamp(
-        100.0,
-        maxHeight - 100.0,
-      );
-      value = value.copyWith(topPaneHeight: newHeight);
+      final minH = maxHeight > 200.0 ? 100.0 : maxHeight * 0.2;
+      final maxH = maxHeight > 200.0 ? maxHeight - 100.0 : maxHeight * 0.8;
+      if (minH <= maxH) {
+        double newHeight = (value.topPaneHeight! + dy).clamp(minH, maxH);
+        value = value.copyWith(topPaneHeight: newHeight);
+      }
     }
   }
 

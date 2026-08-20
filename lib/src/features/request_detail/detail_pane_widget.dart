@@ -116,32 +116,35 @@ class _InspectorDetailPaneWidgetState extends State<InspectorDetailPaneWidget> {
                         hiddenTabs.sort();
                       }
 
-                      return Row(
-                        children: [
-                          InkWell(
-                            onTap: widget.onClose,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: InspectorDimensions.spacingM,
-                                vertical: InspectorDimensions.spacingS,
-                              ),
-                              child: Icon(
-                                Icons.close,
-                                size: InspectorDimensions.iconM,
-                                color: colors.textSecondary,
+                      return SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            InkWell(
+                              onTap: widget.onClose,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: InspectorDimensions.spacingM,
+                                  vertical: InspectorDimensions.spacingS,
+                                ),
+                                child: Icon(
+                                  Icons.close,
+                                  size: InspectorDimensions.iconM,
+                                  color: colors.textSecondary,
+                                ),
                               ),
                             ),
-                          ),
-                          ...visibleTabs.map(
-                            (i) => _buildTab(tabs[i], i, state.selectedTabIndex),
-                          ),
-                          if (hiddenTabs.isNotEmpty)
-                            _buildMoreTabsButton(
-                              hiddenTabs,
-                              tabs,
-                              state.selectedTabIndex,
+                            ...visibleTabs.map(
+                              (i) => _buildTab(tabs[i], i, state.selectedTabIndex),
                             ),
-                        ],
+                            if (hiddenTabs.isNotEmpty)
+                              _buildMoreTabsButton(
+                                hiddenTabs,
+                                tabs,
+                                state.selectedTabIndex,
+                              ),
+                          ],
+                        ),
                       );
                     },
                   );

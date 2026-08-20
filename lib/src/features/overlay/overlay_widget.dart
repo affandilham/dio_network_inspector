@@ -75,6 +75,10 @@ class _DioInspectorOverlayState extends State<DioInspectorOverlay> {
     super.dispose();
   }
 
+  // Threshold (in logical pixels) below which the right-side action buttons
+  // collapse into a single "More options" popup menu.
+  static const double _compactHeaderThreshold = 480.0;
+
   Widget _buildHeader(BuildContext context) {
     final colors = InspectorColors.of(context);
     return BaseContainer(
@@ -86,162 +90,334 @@ class _DioInspectorOverlayState extends State<DioInspectorOverlay> {
       padding: const EdgeInsets.symmetric(
         horizontal: InspectorDimensions.spacingL,
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isCompact = constraints.maxWidth < _compactHeaderThreshold;
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              ValueListenableBuilder<bool>(
-                valueListenable: DioNetworkInspector.instance.isSidePaneOpen,
-                builder: (context, isOpen, _) => Tooltip(
-                  message: 'Toggle Sidebar (⌘/Ctrl+B)',
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(
-                      InspectorDimensions.radiusM,
-                    ),
-                    onTap: () =>
-                        DioNetworkInspector.instance.isSidePaneOpen.value =
-                            !isOpen,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: Icon(
-                        isOpen ? Icons.menu_open : Icons.menu,
-                        color: colors.textPrimary,
-                        size: 20,
+              // ── Left side: sidebar toggle + title + recording indicator ──
+              Row(
+                children: [
+                  ValueListenableBuilder<bool>(
+                    valueListenable:
+                        DioNetworkInspector.instance.isSidePaneOpen,
+                    builder: (context, isOpen, _) => Tooltip(
+                      message: 'Toggle Sidebar (⌘/Ctrl+B)',
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(
+                          InspectorDimensions.radiusM,
+                        ),
+                        onTap: () =>
+                            DioNetworkInspector.instance.isSidePaneOpen.value =
+                                !isOpen,
+                        child: Padding(
+                          padding: const EdgeInsets.all(4.0),
+                          child: Icon(
+                            isOpen ? Icons.menu_open : Icons.menu,
+                            color: colors.textPrimary,
+                            size: 20,
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
-              const SizedBox(width: InspectorDimensions.spacingS),
-              const BaseText(
-                'Network Inspector',
-                style: InspectorTypography.title,
-              ),
-              const SizedBox(width: InspectorDimensions.spacingM),
-              Container(width: 1, height: 16, color: colors.divider),
-              const SizedBox(width: InspectorDimensions.spacingM),
-              ValueListenableBuilder<bool>(
-                valueListenable: DioNetworkInspector.instance.isRecording,
-                builder: (context, isRecording, _) => Tooltip(
-                  message:
-                      '${isRecording ? 'Stop' : 'Start'} recording (⌘/Ctrl+R)',
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(
-                      InspectorDimensions.radiusM,
-                    ),
-                    onTap: () =>
-                        DioNetworkInspector.instance.isRecording.value =
-                            !isRecording,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 4,
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 7,
-                            height: 7,
-                            decoration: BoxDecoration(
-                              color: isRecording
-                                  ? colors.error
-                                  : colors.textSecondary,
-                              shape: BoxShape.circle,
-                            ),
+                  const SizedBox(width: InspectorDimensions.spacingS),
+                  const BaseText(
+                    'Network Inspector',
+                    style: InspectorTypography.title,
+                  ),
+                  const SizedBox(width: InspectorDimensions.spacingM),
+                  Container(width: 1, height: 16, color: colors.divider),
+                  const SizedBox(width: InspectorDimensions.spacingM),
+                  ValueListenableBuilder<bool>(
+                    valueListenable: DioNetworkInspector.instance.isRecording,
+                    builder: (context, isRecording, _) => Tooltip(
+                      message:
+                          '${isRecording ? 'Stop' : 'Start'} recording (⌘/Ctrl+R)',
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(
+                          InspectorDimensions.radiusM,
+                        ),
+                        onTap: () =>
+                            DioNetworkInspector.instance.isRecording.value =
+                                !isRecording,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 4,
                           ),
-                          const SizedBox(width: 6),
-                          BaseText(
-                            isRecording ? 'Recording' : 'Paused',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            color: colors.textSecondary,
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 11,
+                                height: 11,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color:
+                                        (isRecording
+                                                ? colors.error
+                                                : colors.textSecondary)
+                                            .withValues(alpha: 0.35),
+                                    width: 2,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Container(
+                                    width: 7,
+                                    height: 7,
+                                    decoration: BoxDecoration(
+                                      color: isRecording
+                                          ? colors.error
+                                          : colors.textSecondary,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              if (!isCompact) ...[
+                                const SizedBox(width: 6),
+                                BaseText(
+                                  isRecording ? 'Recording' : 'Paused',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  color: colors.textSecondary,
+                                ),
+                              ],
+                            ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
-                ),
+                ],
+              ),
+              Row(
+                children: [
+                  if (isCompact)
+                    _buildCompactMenu(context, colors)
+                  else
+                    _buildExpandedActions(context, colors),
+                  const SizedBox(width: InspectorDimensions.spacingS),
+                  BaseIconButton(
+                    icon: Icons.close,
+                    color: colors.textBlueGrey,
+                    size: InspectorDimensions.iconL,
+                    tooltip: 'Close inspector (Fn+F12)',
+                    onPressed: () => _controller.toggleOpen(false),
+                  ),
+                ],
               ),
             ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildExpandedActions(
+    BuildContext context,
+    InspectorColorsData colors,
+  ) {
+    return Row(
+      children: [
+        ValueListenableBuilder<bool>(
+          valueListenable: DioNetworkInspector.instance.isUrlTesterOpen,
+          builder: (context, isOpen, _) => BaseIconButton(
+            icon: Icons.language,
+            color: isOpen ? colors.primary : colors.textSecondary,
+            size: InspectorDimensions.iconM,
+            tooltip: 'URL Tester',
+            onPressed: () =>
+                DioNetworkInspector.instance.isUrlTesterOpen.value = !isOpen,
           ),
-          Row(
-            children: [
-              ValueListenableBuilder<bool>(
-                valueListenable: DioNetworkInspector.instance.isUrlTesterOpen,
-                builder: (context, isOpen, _) => BaseIconButton(
-                  icon: Icons.language,
-                  color: isOpen ? colors.primary : colors.textSecondary,
+        ),
+        ValueListenableBuilder<bool>(
+          valueListenable: DioNetworkInspector.instance.isNotesOpen,
+          builder: (context, isOpen, _) => BaseIconButton(
+            icon: Icons.sticky_note_2_outlined,
+            color: isOpen ? colors.primary : colors.textSecondary,
+            size: InspectorDimensions.iconM,
+            tooltip: 'Notes',
+            onPressed: () => _windowContentController.setNotesOpen(!isOpen),
+          ),
+        ),
+        if (widget.databaseConfig != null)
+          ValueListenableBuilder<bool>(
+            valueListenable: DioNetworkInspector.instance.isDatabaseOpen,
+            builder: (context, isOpen, _) => BaseIconButton(
+              icon: Icons.storage_outlined,
+              color: isOpen ? colors.primary : colors.textSecondary,
+              size: InspectorDimensions.iconM,
+              tooltip: 'Database Inspector',
+              onPressed: () =>
+                  _windowContentController.setDatabaseOpen(!isOpen),
+            ),
+          ),
+        ValueListenableBuilder<bool>(
+          valueListenable: DioNetworkInspector.instance.isSettingsOpen,
+          builder: (context, isOpen, _) => BaseIconButton(
+            icon: Icons.settings_outlined,
+            color: isOpen ? colors.primary : colors.textSecondary,
+            size: InspectorDimensions.iconM,
+            tooltip: 'Inspector settings',
+            onPressed: () => _windowContentController.setSettingsOpen(!isOpen),
+          ),
+        ),
+        BaseIconButton(
+          icon: Icons.file_upload_outlined,
+          color: colors.textSecondary,
+          size: InspectorDimensions.iconM,
+          tooltip: 'Import session from clipboard',
+          onPressed: _importSession,
+        ),
+        BaseIconButton(
+          icon: Icons.file_download_outlined,
+          color: colors.textSecondary,
+          size: InspectorDimensions.iconM,
+          tooltip: 'Export session to clipboard',
+          onPressed: _exportSession,
+        ),
+      ],
+    );
+  }
+
+  /// Satu tombol popup menu yang menggabungkan semua aksi (lebar sempit).
+  Widget _buildCompactMenu(BuildContext context, InspectorColorsData colors) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: DioNetworkInspector.instance.isUrlTesterOpen,
+      builder: (context, isUrlTesterOpen, _) => ValueListenableBuilder<bool>(
+        valueListenable: DioNetworkInspector.instance.isNotesOpen,
+        builder: (context, isNotesOpen, _) => ValueListenableBuilder<bool>(
+          valueListenable: DioNetworkInspector.instance.isDatabaseOpen,
+          builder: (context, isDatabaseOpen, _) => ValueListenableBuilder<bool>(
+            valueListenable: DioNetworkInspector.instance.isSettingsOpen,
+            builder: (context, isSettingsOpen, _) {
+              // Highlight the menu icon when any sub-feature is active.
+              final anyActive =
+                  isUrlTesterOpen ||
+                  isNotesOpen ||
+                  isDatabaseOpen ||
+                  isSettingsOpen;
+              return PopupMenuButton<_HeaderAction>(
+                tooltip: 'More options',
+                position: PopupMenuPosition.under,
+                offset: const Offset(0, 4),
+                icon: Icon(
+                  Icons.more_vert,
                   size: InspectorDimensions.iconM,
-                  tooltip: 'URL Tester',
-                  onPressed: () =>
-                      DioNetworkInspector.instance.isUrlTesterOpen.value =
-                          !isOpen,
+                  color: anyActive ? colors.primary : colors.textSecondary,
                 ),
-              ),
-              ValueListenableBuilder<bool>(
-                valueListenable: DioNetworkInspector.instance.isNotesOpen,
-                builder: (context, isOpen, _) => BaseIconButton(
-                  icon: Icons.sticky_note_2_outlined,
-                  color: isOpen ? colors.primary : colors.textSecondary,
-                  size: InspectorDimensions.iconM,
-                  tooltip: 'Notes',
-                  onPressed: () =>
-                      _windowContentController.setNotesOpen(!isOpen),
-                ),
-              ),
-              if (widget.databaseConfig != null)
-                ValueListenableBuilder<bool>(
-                  valueListenable: DioNetworkInspector.instance.isDatabaseOpen,
-                  builder: (context, isOpen, _) => BaseIconButton(
-                    icon: Icons.storage_outlined,
-                    color: isOpen ? colors.primary : colors.textSecondary,
-                    size: InspectorDimensions.iconM,
-                    tooltip: 'Database Inspector',
-                    onPressed: () =>
-                        _windowContentController.setDatabaseOpen(!isOpen),
+                onSelected: (action) => _handleHeaderAction(action),
+                itemBuilder: (context) => [
+                  _buildMenuItem(
+                    value: _HeaderAction.urlTester,
+                    icon: Icons.language,
+                    label: 'URL Tester',
+                    isActive: isUrlTesterOpen,
+                    colors: colors,
                   ),
-                ),
-              ValueListenableBuilder<bool>(
-                valueListenable: DioNetworkInspector.instance.isSettingsOpen,
-                builder: (context, isOpen, _) => BaseIconButton(
-                  icon: Icons.settings_outlined,
-                  color: isOpen ? colors.primary : colors.textSecondary,
-                  size: InspectorDimensions.iconM,
-                  tooltip: 'Inspector settings',
-                  onPressed: () =>
-                      _windowContentController.setSettingsOpen(!isOpen),
-                ),
-              ),
-              BaseIconButton(
-                icon: Icons.file_upload_outlined,
-                color: colors.textSecondary,
-                size: InspectorDimensions.iconM,
-                tooltip: 'Import session from clipboard',
-                onPressed: _importSession,
-              ),
-              BaseIconButton(
-                icon: Icons.file_download_outlined,
-                color: colors.textSecondary,
-                size: InspectorDimensions.iconM,
-                tooltip: 'Export session to clipboard',
-                onPressed: _exportSession,
-              ),
-              const SizedBox(width: InspectorDimensions.spacingS),
-              BaseIconButton(
-                icon: Icons.close,
-                color: colors.textBlueGrey,
-                size: InspectorDimensions.iconL,
-                tooltip: 'Close inspector (Fn+F12)',
-                onPressed: () => _controller.toggleOpen(false),
-              ),
-            ],
+                  _buildMenuItem(
+                    value: _HeaderAction.notes,
+                    icon: Icons.sticky_note_2_outlined,
+                    label: 'Notes',
+                    isActive: isNotesOpen,
+                    colors: colors,
+                  ),
+                  if (widget.databaseConfig != null)
+                    _buildMenuItem(
+                      value: _HeaderAction.database,
+                      icon: Icons.storage_outlined,
+                      label: 'Database Inspector',
+                      isActive: isDatabaseOpen,
+                      colors: colors,
+                    ),
+                  _buildMenuItem(
+                    value: _HeaderAction.settings,
+                    icon: Icons.settings_outlined,
+                    label: 'Inspector Settings',
+                    isActive: isSettingsOpen,
+                    colors: colors,
+                  ),
+                  const PopupMenuDivider(),
+                  _buildMenuItem(
+                    value: _HeaderAction.importSession,
+                    icon: Icons.file_upload_outlined,
+                    label: 'Import Session',
+                    isActive: false,
+                    colors: colors,
+                  ),
+                  _buildMenuItem(
+                    value: _HeaderAction.exportSession,
+                    icon: Icons.file_download_outlined,
+                    label: 'Export Session',
+                    isActive: false,
+                    colors: colors,
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  PopupMenuItem<_HeaderAction> _buildMenuItem({
+    required _HeaderAction value,
+    required IconData icon,
+    required String label,
+    required bool isActive,
+    required InspectorColorsData colors,
+  }) {
+    return PopupMenuItem<_HeaderAction>(
+      value: value,
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: InspectorDimensions.iconM,
+            color: isActive ? colors.primary : colors.textSecondary,
+          ),
+          const SizedBox(width: InspectorDimensions.spacingS),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              color: isActive ? colors.primary : colors.textPrimary,
+              fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+            ),
           ),
         ],
       ),
     );
+  }
+
+  void _handleHeaderAction(_HeaderAction action) {
+    switch (action) {
+      case _HeaderAction.urlTester:
+        DioNetworkInspector.instance.isUrlTesterOpen.value =
+            !DioNetworkInspector.instance.isUrlTesterOpen.value;
+      case _HeaderAction.notes:
+        _windowContentController.setNotesOpen(
+          !DioNetworkInspector.instance.isNotesOpen.value,
+        );
+      case _HeaderAction.database:
+        _windowContentController.setDatabaseOpen(
+          !DioNetworkInspector.instance.isDatabaseOpen.value,
+        );
+      case _HeaderAction.settings:
+        _windowContentController.setSettingsOpen(
+          !DioNetworkInspector.instance.isSettingsOpen.value,
+        );
+      case _HeaderAction.importSession:
+        _importSession();
+      case _HeaderAction.exportSession:
+        _exportSession();
+    }
   }
 
   void _exportSession() {
@@ -388,4 +564,14 @@ class _DioInspectorOverlayState extends State<DioInspectorOverlay> {
       ),
     );
   }
+}
+
+/// Enum untuk aksi yang tersedia di popup menu header (mode compact).
+enum _HeaderAction {
+  urlTester,
+  notes,
+  database,
+  settings,
+  importSession,
+  exportSession,
 }
