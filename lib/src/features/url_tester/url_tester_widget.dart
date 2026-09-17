@@ -225,6 +225,7 @@ class _InspectorUrlTesterWidgetState extends State<InspectorUrlTesterWidget> {
       } else {
         final bodyRegExp = RegExp(
           r'''(?:-d|--data|--data-raw)\s+(['"])(.*?)\1''',
+          dotAll: true,
         );
         final bodyMatch = bodyRegExp.firstMatch(text);
         if (bodyMatch != null) {
@@ -323,7 +324,9 @@ class _InspectorUrlTesterWidgetState extends State<InspectorUrlTesterWidget> {
                         Container(
                           decoration: BoxDecoration(
                             color: InspectorColors.of(context).surface,
-                            border: Border.all(color: InspectorColors.of(context).divider),
+                            border: Border.all(
+                              color: InspectorColors.of(context).divider,
+                            ),
                             borderRadius: BorderRadius.circular(
                               InspectorDimensions.radiusS,
                             ),
@@ -365,7 +368,9 @@ class _InspectorUrlTesterWidgetState extends State<InspectorUrlTesterWidget> {
                             decoration: InputDecoration(
                               hintText: 'Enter request URL or paste cURL',
                               hintStyle: InspectorTypography.body.copyWith(
-                                color: InspectorColors.of(context).textSecondary,
+                                color: InspectorColors.of(
+                                  context,
+                                ).textSecondary,
                               ),
                               isDense: true,
                               contentPadding: const EdgeInsets.symmetric(
@@ -404,7 +409,9 @@ class _InspectorUrlTesterWidgetState extends State<InspectorUrlTesterWidget> {
                         ElevatedButton(
                           onPressed: _sendRequest,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: InspectorColors.of(context).primary,
+                            backgroundColor: InspectorColors.of(
+                              context,
+                            ).primary,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(
                               horizontal: InspectorDimensions.spacingL,
@@ -475,7 +482,9 @@ class _InspectorUrlTesterWidgetState extends State<InspectorUrlTesterWidget> {
                         const SizedBox(width: InspectorDimensions.spacingS),
                         Container(
                           decoration: BoxDecoration(
-                            border: Border.all(color: InspectorColors.of(context).divider),
+                            border: Border.all(
+                              color: InspectorColors.of(context).divider,
+                            ),
                             borderRadius: BorderRadius.circular(
                               InspectorDimensions.radiusS,
                             ),
@@ -741,7 +750,9 @@ class _InspectorUrlTesterWidgetState extends State<InspectorUrlTesterWidget> {
                                 ),
                               ),
                               style: TextButton.styleFrom(
-                                foregroundColor: InspectorColors.of(context).primary,
+                                foregroundColor: InspectorColors.of(
+                                  context,
+                                ).primary,
                               ),
                             ),
                           ),
